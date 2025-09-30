@@ -159,6 +159,22 @@ const Receipt = () => {
 
   const creditAmounts = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
 
+  // Helper function to group drinks by name
+  const groupDrinksByName = (transactions: any[]) => {
+    const grouped: { [key: string]: { count: number; total: number; name: string } } = {};
+    
+    transactions.forEach((transaction) => {
+      const drinkName = transaction.drinks?.name || "Unknown";
+      if (!grouped[drinkName]) {
+        grouped[drinkName] = { count: 0, total: 0, name: drinkName };
+      }
+      grouped[drinkName].count += 1;
+      grouped[drinkName].total += Number(transaction.price);
+    });
+
+    return Object.values(grouped).sort((a, b) => b.count - a.count);
+  };
+
   // Group transactions by week
   const getWeekTransactions = () => {
     if (!allTransactions) return [];
@@ -180,11 +196,14 @@ const Receipt = () => {
     return Object.entries(weeks).map(([weekStart, transactions]) => ({
       weekStart: new Date(weekStart),
       transactions,
+      groupedDrinks: groupDrinksByName(transactions),
       total: transactions.reduce((sum, t) => sum + Number(t.price), 0),
     }));
   };
 
   const weeklyData = getWeekTransactions();
+  const todayGroupedDrinks = groupDrinksByName(transactions || []);
+  const yearGroupedDrinks = groupDrinksByName(yearTransactions || []);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -252,14 +271,14 @@ const Receipt = () => {
             </TabsList>
 
             <TabsContent value="today" className="space-y-4">
-              {transactions && transactions.length > 0 ? (
+              {todayGroupedDrinks.length > 0 ? (
                 <div className="rounded-lg border bg-card p-6">
                   <h3 className="mb-3 text-lg font-semibold">Drankjes vandaag:</h3>
                   <div className="space-y-2">
-                    {transactions.map((t) => (
-                      <div key={t.id} className="flex justify-between text-sm">
-                        <span>{t.drinks?.name}</span>
-                        <span>€{Number(t.price).toFixed(2)}</span>
+                    {todayGroupedDrinks.map((drink) => (
+                      <div key={drink.name} className="flex justify-between text-sm">
+                        <span>{drink.count}x {drink.name}</span>
+                        <span>€{drink.total.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -283,15 +302,10 @@ const Receipt = () => {
                       Week van {week.weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}
                     </h3>
                     <div className="space-y-2">
-                      {week.transactions.map((t) => (
-                        <div key={t.id} className="flex justify-between text-sm">
-                          <div>
-                            <span>{t.drinks?.name}</span>
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              {new Date(t.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-                            </span>
-                          </div>
-                          <span>€{Number(t.price).toFixed(2)}</span>
+                      {week.groupedDrinks.map((drink) => (
+                        <div key={drink.name} className="flex justify-between text-sm">
+                          <span>{drink.count}x {drink.name}</span>
+                          <span>€{drink.total.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -309,21 +323,16 @@ const Receipt = () => {
             </TabsContent>
 
             <TabsContent value="year" className="space-y-4">
-              {yearTransactions && yearTransactions.length > 0 ? (
+              {yearGroupedDrinks.length > 0 ? (
                 <div className="rounded-lg border bg-card p-6">
                   <h3 className="mb-3 text-lg font-semibold">
                     Alle drankjes in {new Date().getFullYear()}
                   </h3>
-                  <div className="max-h-96 overflow-y-auto space-y-2">
-                    {yearTransactions.map((t) => (
-                      <div key={t.id} className="flex justify-between text-sm">
-                        <div>
-                          <span>{t.drinks?.name}</span>
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {new Date(t.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-                          </span>
-                        </div>
-                        <span>€{Number(t.price).toFixed(2)}</span>
+                  <div className="space-y-2">
+                    {yearGroupedDrinks.map((drink) => (
+                      <div key={drink.name} className="flex justify-between text-sm">
+                        <span>{drink.count}x {drink.name}</span>
+                        <span>€{drink.total.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
