@@ -87,3 +87,42 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Virtual Keyboard Styling */
+.keyboard-container {
+  padding: 1rem;
+}
+
+.custom-keyboard.hg-theme-default {
+  background-color: hsl(var(--card));
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
+
+.custom-keyboard.hg-theme-default .hg-button {
+  height: 60px;
+  background: hsl(var(--muted));
+  border: none;
+  color: hsl(var(--foreground));
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.custom-keyboard.hg-theme-default .hg-button:active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  transform: scale(0.95);
+}
+
+.custom-keyboard.hg-theme-default .hg-button.hg-enter {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.custom-keyboard.hg-theme-default .hg-button.hg-enter:active {
+  background: hsl(var(--primary) / 0.8);
+}
