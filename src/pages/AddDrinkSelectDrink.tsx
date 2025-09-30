@@ -4,11 +4,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AddDrinkSelectDrink = () => {
   const navigate = useNavigate();
   const { memberId } = useParams();
   const queryClient = useQueryClient();
+  const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: member } = useQuery({
     queryKey: ["member", memberId],
@@ -68,6 +81,21 @@ const AddDrinkSelectDrink = () => {
     },
   });
 
+  const handleDrinkSelect = (drinkId: string) => {
+    setSelectedDrink(drinkId);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    if (selectedDrink) {
+      addTransaction.mutate(selectedDrink);
+    }
+    setShowConfirmDialog(false);
+    setSelectedDrink(null);
+  };
+
+  const selectedDrinkData = drinks?.find((d) => d.id === selectedDrink);
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <Button
@@ -91,7 +119,7 @@ const AddDrinkSelectDrink = () => {
           <Button
             key={drink.id}
             className="h-20 flex-col text-base font-medium"
-            onClick={() => addTransaction.mutate(drink.id)}
+            onClick={() => handleDrinkSelect(drink.id)}
           >
             <span>{drink.name}</span>
             <span className="text-sm opacity-80">
@@ -100,6 +128,27 @@ const AddDrinkSelectDrink = () => {
           </Button>
         ))}
       </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Drankje bevestigen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je <strong>{selectedDrinkData?.name}</strong> (€
+              {selectedDrinkData ? Number(selectedDrinkData.price).toFixed(2) : "0.00"})
+              wilt toevoegen voor <strong>{member?.name}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedDrink(null)}>
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm}>
+              Bevestigen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
