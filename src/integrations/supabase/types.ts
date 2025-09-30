@@ -75,18 +75,21 @@ export type Database = {
       }
       members: {
         Row: {
+          active: boolean
           created_at: string
           credit: number
           id: string
           name: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           credit?: number
           id?: string
           name: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           credit?: number
           id?: string
@@ -159,7 +162,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_inactive_members_from_previous_year: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

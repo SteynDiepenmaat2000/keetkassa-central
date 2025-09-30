@@ -10,10 +10,11 @@ const AddDrink = () => {
   const { data: members } = useQuery({
     queryKey: ["members-sorted"],
     queryFn: async () => {
-      // Get all members with their latest transaction
+      // Get all active members with their latest transaction
       const { data: membersData, error: membersError } = await supabase
         .from("members")
-        .select("*");
+        .select("*")
+        .eq("active", true);
       
       if (membersError) throw membersError;
 

@@ -22,11 +22,30 @@ const Settings = () => {
   const [newExpenseDescription, setNewExpenseDescription] = useState("");
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
   const [selectedExpenseMember, setSelectedExpenseMember] = useState<string | null>(null);
+  const [memberToDeactivate, setMemberToDeactivate] = useState<string | null>(null);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
 
   const { data: members } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("members").select("*").order("name");
+      const { data, error } = await supabase
+        .from("members")
+        .select("*")
+        .eq("active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: inactiveMembers } = useQuery({
+    queryKey: ["inactive-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("*")
+        .eq("active", false)
+        .order("name");
       if (error) throw error;
       return data;
     },
@@ -82,14 +101,36 @@ const Settings = () => {
     onError: () => toast.error("Er ging iets mis"),
   });
 
-  const deleteMember = useMutation({
+  const deactivateMember = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("members").delete().eq("id", id);
+      const { error } = await supabase
+        .from("members")
+        .update({ active: false })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast.success("Lid verwijderd!");
+      queryClient.invalidateQueries({ queryKey: ["inactive-members"] });
+      setShowDeactivateDialog(false);
+      setMemberToDeactivate(null);
+      toast.success("Lid op inactief gezet!");
+    },
+    onError: () => toast.error("Er ging iets mis"),
+  });
+
+  const activateMember = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("members")
+        .update({ active: true })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["inactive-members"] });
+      toast.success("Lid weer actief!");
     },
     onError: () => toast.error("Er ging iets mis"),
   });
@@ -198,8 +239,9 @@ const Settings = () => {
       <h1 className="mb-8 text-2xl font-bold md:text-3xl">Instellingen</h1>
 
       <Tabs defaultValue="members" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="members">Leden</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="members">Actief</TabsTrigger>
+          <TabsTrigger value="inactive">Inactief</TabsTrigger>
           <TabsTrigger value="drinks">Drankjes</TabsTrigger>
           <TabsTrigger value="expenses">Kosten</TabsTrigger>
         </TabsList>
@@ -228,13 +270,51 @@ const Settings = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteMember.mutate(member.id)}
+                    onClick={() => {
+                      setMemberToDeactivate(member.id);
+                      setShowDeactivateDialog(true);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="inactive" className="space-y-4">
+          <div className="rounded-lg border bg-card p-4 mb-4">
+            <p className="text-sm text-muted-foreground">
+              Inactieve leden worden niet meer getoond bij het bestellen. 
+              Ze worden automatisch verwijderd aan het begin van het nieuwe jaar.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {inactiveMembers && inactiveMembers.length > 0 ? (
+              inactiveMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between rounded-lg border bg-muted p-3 opacity-60">
+                  <span>{member.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={Number(member.credit) < 0 ? "text-destructive" : "text-success"}>
+                      €{Number(member.credit).toFixed(2)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => activateMember.mutate(member.id)}
+                    >
+                      Activeer
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
+                Geen inactieve leden
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -342,12 +422,21 @@ const Settings = () => {
                 value={selectedExpenseMember || ""}
                 onChange={(e) => setSelectedExpenseMember(e.target.value)}
               >
-                <option value="">Selecteer lid</option>
+                <option value="">Selecteer lid (actief)</option>
                 {members?.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
                 ))}
+                {inactiveMembers && inactiveMembers.length > 0 && (
+                  <optgroup label="Inactieve leden">
+                    {inactiveMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
               <Button className="w-full" onClick={() => addExpense.mutate()}>
                 Toevoegen
@@ -449,6 +538,44 @@ const Settings = () => {
             <Button className="w-full" onClick={checkPassword}>
               Bevestigen
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lid op inactief zetten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Weet je zeker dat je deze persoon uit de lijst wil halen?</p>
+            <p className="text-sm text-muted-foreground">
+              Het lid wordt op inactief gezet en wordt niet meer getoond bij het bestellen. 
+              De gegevens blijven bewaard tot het nieuwe jaar voor de jaarrekening.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowDeactivateDialog(false);
+                  setMemberToDeactivate(null);
+                }}
+              >
+                Annuleren
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => {
+                  if (memberToDeactivate) {
+                    deactivateMember.mutate(memberToDeactivate);
+                  }
+                }}
+              >
+                Ja, op inactief zetten
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

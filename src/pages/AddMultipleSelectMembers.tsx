@@ -30,7 +30,8 @@ const AddMultipleSelectMembers = () => {
     queryFn: async () => {
       const { data: membersData, error: membersError } = await supabase
         .from("members")
-        .select("*");
+        .select("*")
+        .eq("active", true);
       
       if (membersError) throw membersError;
 
