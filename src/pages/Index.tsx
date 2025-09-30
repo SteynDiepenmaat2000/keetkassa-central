@@ -42,7 +42,6 @@ const Index = () => {
         <Link to="/add-multiple" className="block">
           <Button
             size="lg"
-            variant="secondary"
             className="h-24 w-full text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
           >
             Meerdere drankjes op meerdere namen toevoegen
@@ -52,8 +51,7 @@ const Index = () => {
         <Link to="/receipt" className="block">
           <Button
             size="lg"
-            variant="outline"
-            className="h-24 w-full border-2 text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
+            className="h-24 w-full text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
           >
             Kassabon
           </Button>
