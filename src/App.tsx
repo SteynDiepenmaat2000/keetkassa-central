@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AddDrink from "./pages/AddDrink";
+import AddDrinkSelectDrink from "./pages/AddDrinkSelectDrink";
 import AddMultiple from "./pages/AddMultiple";
+import AddMultipleSelectMembers from "./pages/AddMultipleSelectMembers";
 import Receipt from "./pages/Receipt";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -21,7 +23,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/add-drink" element={<AddDrink />} />
+          <Route path="/add-drink/:memberId" element={<AddDrinkSelectDrink />} />
           <Route path="/add-multiple" element={<AddMultiple />} />
+          <Route path="/add-multiple/:drinkId" element={<AddMultipleSelectMembers />} />
           <Route path="/receipt" element={<Receipt />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

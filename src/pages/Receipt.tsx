@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,16 +13,41 @@ const Receipt = () => {
   const queryClient = useQueryClient();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [showCreditDialog, setShowCreditDialog] = useState(false);
+  const [pendingCreditAmount, setPendingCreditAmount] = useState<number | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: members } = useQuery({
-    queryKey: ["members"],
+    queryKey: ["members-sorted"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: membersData, error: membersError } = await supabase
         .from("members")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data;
+        .select("*");
+      
+      if (membersError) throw membersError;
+
+      const membersWithLastTransaction = await Promise.all(
+        membersData.map(async (member) => {
+          const { data: lastTransaction } = await supabase
+            .from("transactions")
+            .select("created_at")
+            .eq("member_id", member.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          return {
+            ...member,
+            last_transaction: lastTransaction?.created_at || null,
+          };
+        })
+      );
+
+      return membersWithLastTransaction.sort((a, b) => {
+        if (!a.last_transaction && !b.last_transaction) return a.name.localeCompare(b.name);
+        if (!a.last_transaction) return 1;
+        if (!b.last_transaction) return -1;
+        return new Date(b.last_transaction).getTime() - new Date(a.last_transaction).getTime();
+      });
     },
   });
 
@@ -55,9 +81,29 @@ const Receipt = () => {
 
       const { data, error } = await supabase
         .from("transactions")
-        .select("price")
+        .select("*, drinks(name)")
         .eq("member_id", selectedMember)
-        .lt("created_at", today.toISOString());
+        .lt("created_at", today.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: yearTransactions } = useQuery({
+    queryKey: ["year-transactions", selectedMember],
+    enabled: !!selectedMember,
+    queryFn: async () => {
+      if (!selectedMember) return [];
+      const yearStart = new Date(new Date().getFullYear(), 0, 1);
+
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*, drinks(name)")
+        .eq("member_id", selectedMember)
+        .gte("created_at", yearStart.toISOString())
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
@@ -91,11 +137,53 @@ const Receipt = () => {
     },
   });
 
+  const handleCreditClick = (amount: number) => {
+    setPendingCreditAmount(amount);
+    setShowCreditDialog(false);
+    setShowConfirmDialog(true);
+  };
+
+  const confirmAddCredit = () => {
+    if (pendingCreditAmount) {
+      addCredit.mutate(pendingCreditAmount);
+      setShowConfirmDialog(false);
+      setPendingCreditAmount(null);
+    }
+  };
+
   const member = members?.find((m) => m.id === selectedMember);
   const todayTotal = transactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
   const previousTotal = allTransactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
+  const yearTotal = yearTransactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
 
   const creditAmounts = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
+
+  // Group transactions by week
+  const getWeekTransactions = () => {
+    if (!allTransactions) return [];
+    const weeks: { [key: string]: any[] } = {};
+    
+    allTransactions.forEach((transaction) => {
+      const date = new Date(transaction.created_at);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const weekKey = weekStart.toISOString().split('T')[0];
+      
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = [];
+      }
+      weeks[weekKey].push(transaction);
+    });
+
+    return Object.entries(weeks).map(([weekStart, transactions]) => ({
+      weekStart: new Date(weekStart),
+      transactions,
+      total: transactions.reduce((sum, t) => sum + Number(t.price), 0),
+    }));
+  };
+
+  const weeklyData = getWeekTransactions();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -123,7 +211,7 @@ const Receipt = () => {
           </div>
         </div>
       ) : (
-        <div className="mx-auto max-w-2xl space-y-6">
+        <div className="mx-auto max-w-4xl space-y-6">
           <div className="rounded-lg border-2 bg-card p-6">
             <h2 className="mb-4 text-2xl font-bold">{member?.name}</h2>
 
@@ -147,27 +235,109 @@ const Receipt = () => {
               </div>
 
               <div className="flex justify-between border-b pb-2">
-                <span className="font-semibold">Kosten voorgaande weken:</span>
+                <span className="font-semibold">Totaal dit jaar:</span>
                 <span className="text-lg font-bold">
-                  €{previousTotal.toFixed(2)}
+                  €{yearTotal.toFixed(2)}
                 </span>
               </div>
             </div>
           </div>
 
-          {transactions && transactions.length > 0 && (
-            <div className="rounded-lg border bg-card p-6">
-              <h3 className="mb-3 text-lg font-semibold">Drankjes vandaag:</h3>
-              <div className="space-y-2">
-                {transactions.map((t) => (
-                  <div key={t.id} className="flex justify-between text-sm">
-                    <span>{t.drinks?.name}</span>
-                    <span>€{Number(t.price).toFixed(2)}</span>
+          <Tabs defaultValue="today" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="today">Vandaag</TabsTrigger>
+              <TabsTrigger value="history">Historie</TabsTrigger>
+              <TabsTrigger value="year">Dit jaar</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="today" className="space-y-4">
+              {transactions && transactions.length > 0 ? (
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="mb-3 text-lg font-semibold">Drankjes vandaag:</h3>
+                  <div className="space-y-2">
+                    {transactions.map((t) => (
+                      <div key={t.id} className="flex justify-between text-sm">
+                        <span>{t.drinks?.name}</span>
+                        <span>€{Number(t.price).toFixed(2)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  <div className="mt-4 border-t pt-3 flex justify-between font-bold">
+                    <span>Totaal:</span>
+                    <span>€{todayTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+                  Nog geen drankjes vandaag
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-4">
+              {weeklyData.length > 0 ? (
+                weeklyData.map((week, index) => (
+                  <div key={index} className="rounded-lg border bg-card p-6">
+                    <h3 className="mb-3 text-lg font-semibold">
+                      Week van {week.weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}
+                    </h3>
+                    <div className="space-y-2">
+                      {week.transactions.map((t) => (
+                        <div key={t.id} className="flex justify-between text-sm">
+                          <div>
+                            <span>{t.drinks?.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {new Date(t.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </div>
+                          <span>€{Number(t.price).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 border-t pt-2 flex justify-between font-semibold">
+                      <span>Totaal week:</span>
+                      <span>€{week.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+                  Geen eerdere transacties
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="year" className="space-y-4">
+              {yearTransactions && yearTransactions.length > 0 ? (
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="mb-3 text-lg font-semibold">
+                    Alle drankjes in {new Date().getFullYear()}
+                  </h3>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {yearTransactions.map((t) => (
+                      <div key={t.id} className="flex justify-between text-sm">
+                        <div>
+                          <span>{t.drinks?.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {new Date(t.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                        <span>€{Number(t.price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 border-t pt-3 flex justify-between font-bold text-lg">
+                    <span>Totaal {new Date().getFullYear()}:</span>
+                    <span>€{yearTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+                  Nog geen transacties dit jaar
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           <div className="space-y-3">
             <Button
@@ -201,12 +371,42 @@ const Receipt = () => {
                 key={amount}
                 variant="outline"
                 className="h-16 text-lg font-semibold"
-                onClick={() => addCredit.mutate(amount)}
+                onClick={() => handleCreditClick(amount)}
               >
                 €{amount}
               </Button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Credit bevestigen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-center text-lg">
+              Weet je zeker dat je <span className="font-bold text-primary">€{pendingCreditAmount}</span> wilt toevoegen?
+            </p>
+            <p className="text-center text-sm text-muted-foreground mt-2">
+              Vergeet niet het contante geld aan Luc te geven!
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConfirmDialog(false);
+                setPendingCreditAmount(null);
+              }}
+            >
+              Annuleren
+            </Button>
+            <Button onClick={confirmAddCredit}>
+              Bevestigen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

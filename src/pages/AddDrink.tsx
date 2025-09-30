@@ -1,89 +1,49 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 
 const AddDrink = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [selectedMember, setSelectedMember] = useState<string | null>(null);
-  const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
 
   const { data: members } = useQuery({
-    queryKey: ["members"],
+    queryKey: ["members-sorted"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get all members with their latest transaction
+      const { data: membersData, error: membersError } = await supabase
         .from("members")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data;
+        .select("*");
+      
+      if (membersError) throw membersError;
+
+      // Get latest transaction for each member
+      const membersWithLastTransaction = await Promise.all(
+        membersData.map(async (member) => {
+          const { data: lastTransaction } = await supabase
+            .from("transactions")
+            .select("created_at")
+            .eq("member_id", member.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          return {
+            ...member,
+            last_transaction: lastTransaction?.created_at || null,
+          };
+        })
+      );
+
+      // Sort by last transaction (most recent first), then by name
+      return membersWithLastTransaction.sort((a, b) => {
+        if (!a.last_transaction && !b.last_transaction) return a.name.localeCompare(b.name);
+        if (!a.last_transaction) return 1;
+        if (!b.last_transaction) return -1;
+        return new Date(b.last_transaction).getTime() - new Date(a.last_transaction).getTime();
+      });
     },
   });
-
-  const { data: drinks } = useQuery({
-    queryKey: ["drinks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("drinks")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const addTransaction = useMutation({
-    mutationFn: async () => {
-      if (!selectedMember || !selectedDrink) return;
-
-      const member = members?.find((m) => m.id === selectedMember);
-      const drink = drinks?.find((d) => d.id === selectedDrink);
-
-      if (!member || !drink) return;
-
-      // Add transaction
-      const { error: transactionError } = await supabase
-        .from("transactions")
-        .insert({
-          member_id: member.id,
-          drink_id: drink.id,
-          price: drink.price,
-        });
-
-      if (transactionError) throw transactionError;
-
-      // Update member credit
-      const { error: updateError } = await supabase
-        .from("members")
-        .update({ credit: Number(member.credit) - Number(drink.price) })
-        .eq("id", member.id);
-
-      if (updateError) throw updateError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      toast.success("Drankje toegevoegd!");
-      setSelectedMember(null);
-      setSelectedDrink(null);
-      navigate("/");
-    },
-    onError: () => {
-      toast.error("Er ging iets mis");
-    },
-  });
-
-  const handleConfirm = () => {
-    if (!selectedMember || !selectedDrink) {
-      toast.error("Selecteer een naam en een drankje");
-      return;
-    }
-    addTransaction.mutate();
-  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -97,56 +57,19 @@ const AddDrink = () => {
       </Button>
 
       <h1 className="mb-8 text-2xl font-bold md:text-3xl">
-        Drankje op naam toevoegen
+        Selecteer je naam
       </h1>
 
-      <div className="space-y-8">
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">Selecteer je naam:</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {members?.map((member) => (
-              <Button
-                key={member.id}
-                variant={selectedMember === member.id ? "default" : "outline"}
-                className="h-16 text-base font-medium"
-                onClick={() => setSelectedMember(member.id)}
-              >
-                {member.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {selectedMember && (
-          <div>
-            <h2 className="mb-4 text-xl font-semibold">Selecteer je drankje:</h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-              {drinks?.map((drink) => (
-                <Button
-                  key={drink.id}
-                  variant={selectedDrink === drink.id ? "secondary" : "outline"}
-                  className="h-20 flex-col text-base font-medium"
-                  onClick={() => setSelectedDrink(drink.id)}
-                >
-                  <span>{drink.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    €{Number(drink.price).toFixed(2)}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {selectedMember && selectedDrink && (
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        {members?.map((member) => (
           <Button
-            size="lg"
-            className="h-20 w-full text-xl font-semibold"
-            onClick={handleConfirm}
+            key={member.id}
+            className="h-16 text-base font-medium"
+            onClick={() => navigate(`/add-drink/${member.id}`)}
           >
-            Bevestigen
+            {member.name}
           </Button>
-        )}
+        ))}
       </div>
     </div>
   );
