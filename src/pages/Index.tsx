@@ -99,7 +99,7 @@ const Index = () => {
         {topDrinkers && topDrinkers.length > 0 && (
           <div className="mt-12 animate-fade-in">
             <h2 className="mb-6 text-center text-xl font-bold text-foreground md:text-2xl">
-              🏆 Top Drinkers van {new Date().getFullYear()}
+              🏆 Grootste zoeperds van't joar {new Date().getFullYear()}
             </h2>
             
             <div className="flex items-end justify-center gap-4 md:gap-6">
