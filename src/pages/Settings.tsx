@@ -747,7 +747,7 @@ const Settings = () => {
                 value={selectedExpenseMember || ""}
                 onChange={(e) => setSelectedExpenseMember(e.target.value)}
               >
-                <option value="">Selecteer lid</option>
+                <option value="">Selecteer persoon die het bedrag voorgeschoten heeft</option>
                 {members?.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -895,7 +895,7 @@ const Settings = () => {
               value={purchaseMemberId || ""}
               onChange={(e) => setPurchaseMemberId(e.target.value)}
             >
-              <option value="">Selecteer lid</option>
+              <option value="">Selecteer persoon die het bedrag voorgeschoten heeft</option>
               {members?.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
