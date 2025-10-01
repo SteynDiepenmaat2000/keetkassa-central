@@ -164,8 +164,7 @@ const AddMultipleSelectMembers = () => {
                 key={member.id}
                 variant={isSelected ? "default" : "outline"}
                 className="h-20 whitespace-normal break-words px-2 text-lg font-medium touch-manipulation transition-all active:scale-95 sm:h-24 sm:text-xl"
-                onClick={() => toggleMember(member.id)}
-                onTouchEnd={(e) => {
+                onClick={(e) => {
                   e.preventDefault();
                   toggleMember(member.id);
                 }}

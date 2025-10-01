@@ -126,7 +126,7 @@ const Index = () => {
             <div className="flex items-end justify-center gap-3 sm:gap-4 md:gap-8">
               {/* 2nd Place */}
               {topDrinkers[1] && (
-                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                <div className="flex flex-col items-center animate-slide-up opacity-0" style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}>
                   <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 md:h-20 md:w-20 transition-all hover:scale-110 hover:shadow-lg">
                     <Trophy className="h-8 w-8 text-slate-600 dark:text-slate-300 md:h-10 md:w-10 animate-bounce-subtle" />
                   </div>
@@ -148,7 +148,7 @@ const Index = () => {
 
               {/* 1st Place */}
               {topDrinkers[0] && (
-                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0s" }}>
+                <div className="flex flex-col items-center animate-slide-up opacity-0" style={{ animationDelay: "0s", animationFillMode: "forwards" }}>
                   <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg md:h-24 md:w-24 transition-all hover:scale-110 hover:shadow-2xl">
                     <Trophy className="h-10 w-10 text-yellow-900 md:h-12 md:w-12 animate-bounce-subtle" />
                   </div>
@@ -170,7 +170,7 @@ const Index = () => {
 
               {/* 3rd Place */}
               {topDrinkers[2] && (
-                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0.4s" }}>
+                <div className="flex flex-col items-center animate-slide-up opacity-0" style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}>
                   <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-700 dark:bg-amber-800 md:h-16 md:w-16 transition-all hover:scale-110 hover:shadow-lg">
                     <Trophy className="h-7 w-7 text-amber-200 md:h-8 md:w-8 animate-bounce-subtle" />
                   </div>
