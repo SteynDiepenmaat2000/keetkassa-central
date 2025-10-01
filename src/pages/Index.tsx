@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, Trophy, Info } from "lucide-react";
+import { Settings, Trophy, Info, AlertTriangle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const Index = () => {
   const queryClient = useQueryClient();
+  const [showMostWanted, setShowMostWanted] = useState(false);
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -17,6 +18,7 @@ const Index = () => {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
         queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
+        queryClient.invalidateQueries({ queryKey: ["top-debtors"] });
       })
       .subscribe();
 
@@ -24,6 +26,15 @@ const Index = () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  // Toggle between top drinkers and most wanted every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowMostWanted((prev) => !prev);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const currentTime = new Date().toLocaleTimeString("nl-NL", {
     hour: "2-digit",
@@ -72,6 +83,22 @@ const Index = () => {
     },
   });
 
+  const { data: topDebtors } = useQuery({
+    queryKey: ["top-debtors"],
+    queryFn: async () => {
+      const { data: members, error } = await supabase
+        .from("members")
+        .select("id, name, credit")
+        .eq("active", true)
+        .order("credit", { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+
+      return members.filter(m => Number(m.credit) < 0);
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <header className="mb-8 flex items-start justify-between">
@@ -117,8 +144,8 @@ const Index = () => {
         </Link>
 
 
-        {topDrinkers && topDrinkers.length > 0 && (
-          <div className="mt-16 animate-fade-in">
+        {!showMostWanted && topDrinkers && topDrinkers.length > 0 && (
+          <div className="mt-16 animate-fade-in" key="top-drinkers">
             <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl animate-scale-in">
               🏆 Grootste zoeperds van't joar {new Date().getFullYear()}
             </h2>
@@ -189,6 +216,47 @@ const Index = () => {
                   <div className="h-12 w-20 bg-amber-800 dark:bg-amber-900 md:h-14 md:w-28" />
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {showMostWanted && topDebtors && topDebtors.length > 0 && (
+          <div className="mt-16 animate-fade-in" key="most-wanted">
+            <h2 className="mb-8 text-center text-xl font-bold text-destructive sm:text-2xl md:text-3xl animate-scale-in flex items-center justify-center gap-2">
+              <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 animate-bounce-subtle" />
+              MOST WANTED
+              <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 animate-bounce-subtle" />
+            </h2>
+            
+            <div className="mx-auto max-w-md space-y-3 animate-slide-up">
+              {topDebtors.map((debtor, index) => (
+                <div 
+                  key={debtor.id} 
+                  className="rounded-lg border-2 border-destructive bg-destructive/10 p-4 transition-all hover:scale-105 hover:shadow-lg opacity-0 animate-slide-up"
+                  style={{ 
+                    animationDelay: `${index * 0.1}s`,
+                    animationFillMode: "forwards"
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive text-destructive-foreground font-bold text-xl">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-bold text-foreground text-lg">{debtor.name}</div>
+                        <div className="text-sm text-muted-foreground">Wanbetaler</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-destructive">
+                        €{Math.abs(Number(debtor.credit)).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">schuld</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
