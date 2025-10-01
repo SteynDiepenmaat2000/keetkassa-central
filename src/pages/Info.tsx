@@ -74,6 +74,55 @@ const Info = () => {
           </CardContent>
         </Card>
 
+        <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-500">
+              <Shield className="h-5 w-5" />
+              Credits: Hoe werkt het?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-foreground">
+              Met je credit account kun je drankjes kopen zonder elke keer contant geld te hoeven 
+              betalen. Als je credit hebt, wordt dat automatisch gebruikt bij het afrekenen van je drankjes.
+            </p>
+            <p className="text-foreground">
+              Je kunt credit krijgen door:
+            </p>
+            <ul className="list-disc list-inside text-foreground ml-2 space-y-1">
+              <li>Geld overmaken naar de keet (wordt dan op je account gezet)</li>
+              <li>Als er iets voor de keet is gekocht (zie hieronder)</li>
+              <li>Als correctie door een admin wanneer er iets mis is gegaan</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-500/50 bg-purple-50/50 dark:bg-purple-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-500">
+              <AlertCircle className="h-5 w-5" />
+              Inkopen voor de keet: Wisselgeld beleid
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-foreground">
+              Heb je iets gekocht voor de keet? Super! Dit is hoe we het terugbetalen:
+            </p>
+            <p className="text-foreground font-medium">
+              Omdat we alleen tientjes in contant hebben, betalen we kleine bedragen niet helemaal 
+              contant terug.
+            </p>
+            <p className="text-foreground">
+              <span className="font-semibold">Voorbeeld:</span> Je hebt voor €86,75 boodschappen gedaan. 
+              Dan krijg je €80,- contant terug en wordt €6,75 op je credit account gezet.
+            </p>
+            <p className="text-foreground text-sm text-muted-foreground">
+              Dit doen we om te voorkomen dat we met allemaal kleingeld moeten slepen. Je credit kun 
+              je gewoon gebruiken voor drankjes!
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
