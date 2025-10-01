@@ -82,13 +82,15 @@ const AddMultipleSelectMembers = () => {
   });
 
   const toggleMember = (memberId: string) => {
-    const newSelected = new Set(selectedMembers);
-    if (newSelected.has(memberId)) {
-      newSelected.delete(memberId);
-    } else {
-      newSelected.add(memberId);
-    }
-    setSelectedMembers(newSelected);
+    setSelectedMembers((prev) => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(memberId)) {
+        newSelected.delete(memberId);
+      } else {
+        newSelected.add(memberId);
+      }
+      return newSelected;
+    });
   };
 
   const addTransactions = useMutation({
@@ -155,16 +157,23 @@ const AddMultipleSelectMembers = () => {
 
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {members?.map((member) => (
-            <Button
-              key={member.id}
-              variant={selectedMembers.has(member.id) ? "default" : "outline"}
-              className="h-20 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
-              onClick={() => toggleMember(member.id)}
-            >
-              {member.name}
-            </Button>
-          ))}
+          {members?.map((member) => {
+            const isSelected = selectedMembers.has(member.id);
+            return (
+              <Button
+                key={member.id}
+                variant={isSelected ? "default" : "outline"}
+                className="h-20 whitespace-normal break-words px-2 text-lg font-medium touch-manipulation transition-all active:scale-95 sm:h-24 sm:text-xl"
+                onClick={() => toggleMember(member.id)}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  toggleMember(member.id);
+                }}
+              >
+                {member.name}
+              </Button>
+            );
+          })}
         </div>
 
         {selectedMembers.size > 0 && (

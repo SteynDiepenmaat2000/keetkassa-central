@@ -337,9 +337,11 @@ const Settings = () => {
       <h1 className="mb-8 text-2xl font-bold md:text-3xl">Instellingen</h1>
 
       <Tabs defaultValue="system" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="system">Systeemmenu</TabsTrigger>
           <TabsTrigger value="purchases">Inkopen</TabsTrigger>
+          <TabsTrigger value="expenses">Kosten</TabsTrigger>
+          <TabsTrigger value="statistics">Statistieken</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system" className="space-y-4">
@@ -606,12 +608,17 @@ const Settings = () => {
                 </div>
               ))}
           </div>
+        </TabsContent>
 
+        <TabsContent value="expenses" className="space-y-4">
           <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 font-semibold">Vrije kosten toevoegen</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Gebruik dit voor kosten die niet onder de standaard inkoop categorieën vallen, zoals schoonmaak, reparaties, etc.
+            </p>
             <div className="space-y-3">
               <Input
-                placeholder="Beschrijving (bijv. kratten bier)"
+                placeholder="Beschrijving (bijv. schoonmaak, reparatie)"
                 value={newExpenseDescription}
                 onChange={(e) => setNewExpenseDescription(e.target.value)}
               />
@@ -627,7 +634,7 @@ const Settings = () => {
                 value={selectedExpenseMember || ""}
                 onChange={(e) => setSelectedExpenseMember(e.target.value)}
               >
-                <option value="">Selecteer lid (actief)</option>
+                <option value="">Selecteer lid</option>
                 {members?.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -724,6 +731,14 @@ const Settings = () => {
                 </div>
               ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="statistics" className="space-y-4">
+          <iframe 
+            src="/statistics" 
+            className="w-full h-[calc(100vh-12rem)] rounded-lg border bg-card"
+            title="Kassaoverzicht & Statistieken"
+          />
         </TabsContent>
       </Tabs>
 
