@@ -119,18 +119,26 @@ const Settings = () => {
   });
 
   const checkPassword = async () => {
-    const { data } = await supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "admin_password")
-      .single();
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password }
+      });
 
-    if (data?.value === password) {
-      setIsAuthenticated(true);
-      setShowPasswordDialog(false);
-      toast.success("Wachtwoord correct!");
-    } else {
-      toast.error("Onjuist wachtwoord");
+      if (error) throw error;
+
+      if (data?.valid) {
+        setIsAuthenticated(true);
+        setShowPasswordDialog(false);
+        setPassword("");
+        toast.success("Wachtwoord correct!");
+      } else {
+        toast.error("Onjuist wachtwoord");
+        setPassword("");
+      }
+    } catch (error) {
+      console.error('Password verification error:', error);
+      toast.error("Fout bij wachtwoord verificatie");
+      setPassword("");
     }
   };
 
@@ -430,7 +438,14 @@ const Settings = () => {
 
       <h1 className="mb-8 text-2xl font-bold md:text-3xl">Instellingen</h1>
 
-      <Tabs defaultValue="system" className="w-full">
+      {!isAuthenticated ? (
+        <div className="rounded-lg border bg-card p-8 text-center">
+          <h2 className="mb-4 text-xl font-semibold">Toegang beveiligd</h2>
+          <p className="mb-6 text-muted-foreground">Het instellingen menu is beveiligd met een wachtwoord.</p>
+          <Button onClick={requiresPassword}>Wachtwoord invoeren</Button>
+        </div>
+      ) : (
+        <Tabs defaultValue="system" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="system">Systeemmenu</TabsTrigger>
           <TabsTrigger value="purchases">Inkopen</TabsTrigger>
@@ -854,6 +869,7 @@ const Settings = () => {
           />
         </TabsContent>
       </Tabs>
+      )}
 
       <Dialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
         <DialogContent>
