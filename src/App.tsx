@@ -29,6 +29,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <div className="animate-fade-in">
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -43,6 +44,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+        </div>
     </TooltipProvider>
   </QueryClientProvider>
   );

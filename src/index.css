@@ -91,11 +91,21 @@ All colors MUST be HSL.
     user-select: none;
   }
 
-  /* Touch-friendly elements */
+  /* Touch-friendly elements with smooth animations */
   button, a, [role="button"] {
     min-height: 44px;
     min-width: 44px;
     touch-action: manipulation;
+    transition: var(--transition-smooth);
+  }
+  
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.2);
   }
 
   /* Improve text readability on mobile */
