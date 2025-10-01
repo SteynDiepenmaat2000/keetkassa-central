@@ -251,7 +251,7 @@ const Index = () => {
                         <span className="text-2xl">🤠</span>
                       </div>
                       <div>
-                        <div className="font-black text-amber-950 dark:text-amber-100 text-lg tracking-wide" style={{ fontFamily: 'serif' }}>
+                        <div className="font-black text-yellow-900 dark:text-yellow-400 text-lg tracking-wide" style={{ fontFamily: 'serif' }}>
                           {debtor.name.toUpperCase()}
                         </div>
                         <div className="text-xs text-amber-800 dark:text-amber-400 font-semibold">
