@@ -6,8 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const PURCHASE_CATEGORIES = [
   { id: "beer", label: "Bier" },
@@ -42,6 +52,12 @@ const Settings = () => {
   const [purchaseDeposit, setPurchaseDeposit] = useState("");
   const [purchaseDescription, setPurchaseDescription] = useState("");
   const [purchaseMemberId, setPurchaseMemberId] = useState<string | null>(null);
+  
+  // Database reset states
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetStep, setResetStep] = useState(1);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [userVerificationInput, setUserVerificationInput] = useState("");
 
   const { data: members } = useQuery({
     queryKey: ["members"],
@@ -318,6 +334,84 @@ const Settings = () => {
     onError: () => toast.error("Er ging iets mis"),
   });
 
+  const generateVerificationCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const handleResetDatabase = useMutation({
+    mutationFn: async () => {
+      // Delete all transactions
+      const { error: transactionsError } = await supabase
+        .from("transactions")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (transactionsError) throw transactionsError;
+
+      // Delete all purchases
+      const { error: purchasesError } = await supabase
+        .from("purchases")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (purchasesError) throw purchasesError;
+
+      // Delete all expenses
+      const { error: expensesError } = await supabase
+        .from("expenses")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (expensesError) throw expensesError;
+
+      // Reset all member credits to 0
+      const { error: membersError } = await supabase
+        .from("members")
+        .update({ credit: 0 })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (membersError) throw membersError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      toast.success("Database gewist - alle transacties, inkopen en kosten zijn verwijderd");
+      setShowResetDialog(false);
+      setResetStep(1);
+      setUserVerificationInput("");
+    },
+    onError: (error) => {
+      toast.error("Fout bij wissen database: " + error.message);
+    },
+  });
+
+  const handleResetClick = () => {
+    if (resetStep === 1) {
+      setResetStep(2);
+    } else if (resetStep === 2) {
+      const code = generateVerificationCode();
+      setVerificationCode(code);
+      setResetStep(3);
+    } else if (resetStep === 3) {
+      if (userVerificationInput === verificationCode) {
+        handleResetDatabase.mutate();
+      } else {
+        toast.error("Verkeerde code - de ingevoerde code komt niet overeen");
+      }
+    }
+  };
+
+  const handleCancelReset = () => {
+    setShowResetDialog(false);
+    setResetStep(1);
+    setUserVerificationInput("");
+    setVerificationCode("");
+  };
+
   const requiresPassword = () => {
     setShowPasswordDialog(true);
   };
@@ -351,7 +445,8 @@ const Settings = () => {
               <Button onClick={requiresPassword}>Wachtwoord invoeren</Button>
             </div>
           ) : (
-            <Tabs defaultValue="members" className="w-full">
+            <>
+              <Tabs defaultValue="members" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="members">Actief</TabsTrigger>
                 <TabsTrigger value="inactive">Inactief</TabsTrigger>
@@ -504,6 +599,24 @@ const Settings = () => {
                 </div>
               </TabsContent>
             </Tabs>
+
+            <div className="rounded-lg border border-destructive bg-card p-4 mt-8">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <h3 className="font-semibold text-destructive">Gevaarzone</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Wis alle transacties, inkopen en kosten uit de database. Deze actie kan niet ongedaan gemaakt worden.
+              </p>
+              <Button 
+                variant="destructive"
+                onClick={() => setShowResetDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Database Wissen
+              </Button>
+            </div>
+            </>
           )}
         </TabsContent>
 
@@ -864,6 +977,66 @@ const Settings = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {resetStep === 1 && "Database wissen?"}
+              {resetStep === 2 && "Weet je het zeker?"}
+              {resetStep === 3 && "Verificatie vereist"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                {resetStep === 1 && (
+                  <p>Hiermee verwijder je alle data uit de database.</p>
+                )}
+                {resetStep === 2 && (
+                  <div className="space-y-2">
+                    <p className="font-semibold">Dit zal permanent verwijderen:</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>Alle transacties (verkopen)</li>
+                      <li>Alle inkopen</li>
+                      <li>Alle kosten</li>
+                      <li>Alle krediet saldi worden gereset naar €0</li>
+                    </ul>
+                    <p className="font-semibold text-destructive">Deze actie kan NIET ongedaan gemaakt worden!</p>
+                  </div>
+                )}
+                {resetStep === 3 && (
+                  <div className="space-y-3">
+                    <p>Type de volgende code over om te bevestigen:</p>
+                    <div className="p-3 bg-muted rounded-md text-center">
+                      <code className="text-lg font-mono font-bold tracking-wider">
+                        {verificationCode}
+                      </code>
+                    </div>
+                    <Input
+                      placeholder="Type de code hier"
+                      value={userVerificationInput}
+                      onChange={(e) => setUserVerificationInput(e.target.value.toUpperCase())}
+                      className="font-mono text-center text-lg tracking-wider"
+                      maxLength={8}
+                    />
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelReset}>
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetClick}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={resetStep === 3 && userVerificationInput !== verificationCode}
+            >
+              {resetStep === 3 ? "Wissen" : "Doorgaan"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
