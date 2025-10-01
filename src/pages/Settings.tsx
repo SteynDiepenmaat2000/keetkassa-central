@@ -446,11 +446,12 @@ const Settings = () => {
         </div>
       ) : (
         <Tabs defaultValue="system" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="system">Systeemmenu</TabsTrigger>
           <TabsTrigger value="purchases">Inkopen</TabsTrigger>
           <TabsTrigger value="expenses">Kosten</TabsTrigger>
           <TabsTrigger value="statistics">Statistieken</TabsTrigger>
+          <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system" className="space-y-4">
@@ -614,23 +615,6 @@ const Settings = () => {
                 </div>
               </TabsContent>
             </Tabs>
-
-            <div className="rounded-lg border border-destructive bg-card p-4 mt-8">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                <h3 className="font-semibold text-destructive">Gevaarzone</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Wis alle transacties, inkopen en kosten uit de database. Deze actie kan niet ongedaan gemaakt worden.
-              </p>
-              <Button 
-                variant="destructive"
-                onClick={() => setShowResetDialog(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Database Wissen
-              </Button>
-            </div>
             </>
           )}
         </TabsContent>
@@ -867,6 +851,25 @@ const Settings = () => {
             className="w-full h-[calc(100vh-12rem)] rounded-lg border bg-card"
             title="Kassaoverzicht & Statistieken"
           />
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-4">
+          <div className="rounded-lg border border-destructive bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h3 className="font-semibold text-destructive">Gevaarzone</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Wis alle transacties, inkopen en kosten uit de database. Deze actie kan niet ongedaan gemaakt worden.
+            </p>
+            <Button 
+              variant="destructive"
+              onClick={() => setShowResetDialog(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Database Wissen
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
       )}
