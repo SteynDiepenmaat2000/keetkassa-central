@@ -119,18 +119,18 @@ const Index = () => {
 
         {topDrinkers && topDrinkers.length > 0 && (
           <div className="mt-16 animate-fade-in">
-            <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl">
+            <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl animate-scale-in">
               🏆 Grootste zoeperds van't joar {new Date().getFullYear()}
             </h2>
             
             <div className="flex items-end justify-center gap-3 sm:gap-4 md:gap-8">
               {/* 2nd Place */}
               {topDrinkers[1] && (
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 md:h-20 md:w-20">
-                    <Trophy className="h-8 w-8 text-slate-600 dark:text-slate-300 md:h-10 md:w-10" />
+                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                  <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 md:h-20 md:w-20 transition-all hover:scale-110 hover:shadow-lg">
+                    <Trophy className="h-8 w-8 text-slate-600 dark:text-slate-300 md:h-10 md:w-10 animate-bounce-subtle" />
                   </div>
-                  <div className="w-24 rounded-t-lg bg-gradient-to-t from-slate-300 to-slate-200 p-4 text-center dark:from-slate-700 dark:to-slate-600 md:w-32">
+                  <div className="w-24 rounded-t-lg bg-gradient-to-t from-slate-300 to-slate-200 p-4 text-center dark:from-slate-700 dark:to-slate-600 md:w-32 transition-all hover:shadow-xl">
                     <div className="mb-2 text-4xl font-bold text-slate-700 dark:text-slate-200">2</div>
                     <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 md:text-base">
                       {topDrinkers[1].name}
@@ -148,11 +148,11 @@ const Index = () => {
 
               {/* 1st Place */}
               {topDrinkers[0] && (
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg md:h-24 md:w-24">
-                    <Trophy className="h-10 w-10 text-yellow-900 md:h-12 md:w-12" />
+                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0s" }}>
+                  <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg md:h-24 md:w-24 transition-all hover:scale-110 hover:shadow-2xl">
+                    <Trophy className="h-10 w-10 text-yellow-900 md:h-12 md:w-12 animate-bounce-subtle" />
                   </div>
-                  <div className="w-28 rounded-t-lg bg-gradient-to-t from-yellow-500 to-yellow-400 p-4 text-center shadow-lg md:w-36">
+                  <div className="w-28 rounded-t-lg bg-gradient-to-t from-yellow-500 to-yellow-400 p-4 text-center shadow-lg md:w-36 transition-all hover:shadow-2xl hover:scale-105">
                     <div className="mb-2 text-5xl font-bold text-yellow-900">1</div>
                     <div className="text-base font-bold text-yellow-900 md:text-lg">
                       {topDrinkers[0].name}
@@ -170,11 +170,11 @@ const Index = () => {
 
               {/* 3rd Place */}
               {topDrinkers[2] && (
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-700 dark:bg-amber-800 md:h-16 md:w-16">
-                    <Trophy className="h-7 w-7 text-amber-200 md:h-8 md:w-8" />
+                <div className="flex flex-col items-center animate-slide-up" style={{ animationDelay: "0.4s" }}>
+                  <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-700 dark:bg-amber-800 md:h-16 md:w-16 transition-all hover:scale-110 hover:shadow-lg">
+                    <Trophy className="h-7 w-7 text-amber-200 md:h-8 md:w-8 animate-bounce-subtle" />
                   </div>
-                  <div className="w-20 rounded-t-lg bg-gradient-to-t from-amber-800 to-amber-700 p-3 text-center dark:from-amber-900 dark:to-amber-800 md:w-28">
+                  <div className="w-20 rounded-t-lg bg-gradient-to-t from-amber-800 to-amber-700 p-3 text-center dark:from-amber-900 dark:to-amber-800 md:w-28 transition-all hover:shadow-xl">
                     <div className="mb-2 text-3xl font-bold text-amber-100">3</div>
                     <div className="text-xs font-semibold text-amber-100 md:text-sm">
                       {topDrinkers[2].name}
