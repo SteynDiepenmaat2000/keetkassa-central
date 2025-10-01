@@ -88,11 +88,11 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl space-y-4">
+      <div className="mx-auto max-w-3xl space-y-5">
         <Link to="/add-drink" className="block">
           <Button
             size="lg"
-            className="h-24 w-full text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
+            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Drankje op naam toevoegen
           </Button>
@@ -101,7 +101,7 @@ const Index = () => {
         <Link to="/add-multiple" className="block">
           <Button
             size="lg"
-            className="h-24 w-full text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
+            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Meerdere drankjes op meerdere namen toevoegen
           </Button>
@@ -110,19 +110,19 @@ const Index = () => {
         <Link to="/receipt" className="block">
           <Button
             size="lg"
-            className="h-24 w-full text-xl font-semibold transition-all hover:scale-[1.02] md:h-32 md:text-2xl"
+            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Kassabon
           </Button>
         </Link>
 
         {topDrinkers && topDrinkers.length > 0 && (
-          <div className="mt-12 animate-fade-in">
-            <h2 className="mb-6 text-center text-xl font-bold text-foreground md:text-2xl">
+          <div className="mt-16 animate-fade-in">
+            <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl">
               🏆 Grootste zoeperds van't joar {new Date().getFullYear()}
             </h2>
             
-            <div className="flex items-end justify-center gap-4 md:gap-6">
+            <div className="flex items-end justify-center gap-3 sm:gap-4 md:gap-8">
               {/* 2nd Place */}
               {topDrinkers[1] && (
                 <div className="flex flex-col items-center">

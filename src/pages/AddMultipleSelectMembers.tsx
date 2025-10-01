@@ -141,25 +141,25 @@ const AddMultipleSelectMembers = () => {
         Terug
       </Button>
 
-      <h1 className="mb-4 text-2xl font-bold md:text-3xl">
+      <h1 className="mb-4 text-2xl font-bold sm:text-3xl md:text-4xl">
         Selecteer de namen
       </h1>
-      <p className="mb-8 text-lg text-muted-foreground">
+      <p className="mb-8 text-xl text-muted-foreground sm:text-2xl">
         Drankje: <span className="font-semibold text-foreground">{drink?.name} (€{Number(drink?.price).toFixed(2)})</span>
         {selectedMembers.size > 0 && (
-          <span className="ml-4 text-primary">
+          <span className="ml-4 block text-primary sm:inline sm:ml-6">
             {selectedMembers.size} geselecteerd
           </span>
         )}
       </p>
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {members?.map((member) => (
             <Button
               key={member.id}
               variant={selectedMembers.has(member.id) ? "default" : "outline"}
-              className="h-16 text-base font-medium"
+              className="h-20 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
               onClick={() => toggleMember(member.id)}
             >
               {member.name}
@@ -170,7 +170,7 @@ const AddMultipleSelectMembers = () => {
         {selectedMembers.size > 0 && (
           <Button
             size="lg"
-            className="h-20 w-full text-xl font-semibold"
+            className="h-24 w-full text-2xl font-semibold active:scale-95 sm:h-28"
             onClick={() => addTransactions.mutate()}
           >
             Bevestigen ({selectedMembers.size} drankjes)

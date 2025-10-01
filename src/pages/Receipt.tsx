@@ -233,17 +233,17 @@ const Receipt = () => {
         Terug
       </Button>
 
-      <h1 className="mb-8 text-2xl font-bold md:text-3xl">Kassabon</h1>
+      <h1 className="mb-8 text-2xl font-bold sm:text-3xl md:text-4xl">Kassabon</h1>
 
       {!selectedMember ? (
         <div>
-          <h2 className="mb-4 text-xl font-semibold">Selecteer je naam:</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <h2 className="mb-6 text-xl font-semibold sm:text-2xl">Selecteer je naam:</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {members?.map((m) => (
               <Button
                 key={m.id}
                 variant="outline"
-                className="h-16 text-base font-medium"
+                className="h-20 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
                 onClick={() => setSelectedMember(m.id)}
               >
                 {m.name}
@@ -370,10 +370,10 @@ const Receipt = () => {
             </TabsContent>
           </Tabs>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Button
               size="lg"
-              className="h-16 w-full text-lg font-semibold"
+              className="h-20 w-full text-xl font-semibold active:scale-95 sm:h-24 sm:text-2xl"
               onClick={() => setShowCreditDialog(true)}
             >
               Credit opwaarderen
@@ -382,7 +382,7 @@ const Receipt = () => {
             <Button
               variant="outline"
               size="lg"
-              className="h-14 w-full"
+              className="h-16 w-full text-lg active:scale-95 sm:h-20 sm:text-xl"
               onClick={() => setSelectedMember(null)}
             >
               Andere naam selecteren
@@ -396,12 +396,12 @@ const Receipt = () => {
           <DialogHeader>
             <DialogTitle>Credit opwaarderen</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             {creditAmounts.map((amount) => (
               <Button
                 key={amount}
                 variant="outline"
-                className="h-16 text-lg font-semibold"
+                className="h-20 text-xl font-semibold active:scale-95 sm:h-24 sm:text-2xl"
                 onClick={() => handleCreditClick(amount)}
               >
                 €{amount}

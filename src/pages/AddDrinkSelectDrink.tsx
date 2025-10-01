@@ -124,22 +124,22 @@ const AddDrinkSelectDrink = () => {
         Terug
       </Button>
 
-      <h1 className="mb-4 text-2xl font-bold md:text-3xl">
+      <h1 className="mb-4 text-2xl font-bold sm:text-3xl md:text-4xl">
         Selecteer je drankje
       </h1>
-      <p className="mb-8 text-lg text-muted-foreground">
+      <p className="mb-8 text-xl text-muted-foreground sm:text-2xl">
         Voor: <span className="font-semibold text-foreground">{member?.name}</span>
       </p>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {drinks?.map((drink) => (
           <Button
             key={drink.id}
-            className="h-20 flex-col text-base font-medium"
+            className="h-24 flex-col gap-1 text-lg font-medium active:scale-95 sm:h-28 sm:text-xl"
             onClick={() => handleDrinkSelect(drink.id)}
           >
-            <span>{drink.name}</span>
-            <span className="text-sm opacity-80">
+            <span className="leading-tight">{drink.name}</span>
+            <span className="text-base opacity-90 sm:text-lg">
               €{Number(drink.price).toFixed(2)}
             </span>
           </Button>

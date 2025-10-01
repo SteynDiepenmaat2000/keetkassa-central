@@ -76,15 +76,15 @@ const AddDrink = () => {
         Terug
       </Button>
 
-      <h1 className="mb-8 text-2xl font-bold md:text-3xl">
+      <h1 className="mb-8 text-2xl font-bold sm:text-3xl md:text-4xl">
         Selecteer je naam
       </h1>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {members?.map((member) => (
           <Button
             key={member.id}
-            className="h-16 text-base font-medium"
+            className="h-20 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
             onClick={() => navigate(`/add-drink/${member.id}`)}
           >
             {member.name}
