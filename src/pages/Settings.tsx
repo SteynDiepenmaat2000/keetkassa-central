@@ -317,21 +317,21 @@ const Settings = () => {
 
   const settlePurchase = useMutation({
     mutationFn: async ({ id, method, memberId, amount }: any) => {
+      // Mark purchase as settled with payment method
       const { error: purchaseError } = await supabase
         .from("purchases")
-        .update({ settled: true })
+        .update({ settled: true, payment_method: method })
         .eq("id", id);
       if (purchaseError) throw purchaseError;
 
-      if (method === "credit") {
-        const member = members?.find((m) => m.id === memberId);
-        if (member) {
-          const { error: creditError } = await supabase
-            .from("members")
-            .update({ credit: Number(member.credit) + amount })
-            .eq("id", memberId);
-          if (creditError) throw creditError;
-        }
+      // Update member credit with the specified amount
+      const member = members?.find((m) => m.id === memberId);
+      if (member) {
+        const { error: creditError } = await supabase
+          .from("members")
+          .update({ credit: Number(member.credit) + amount })
+          .eq("id", memberId);
+        if (creditError) throw creditError;
       }
     },
     onSuccess: () => {
@@ -846,11 +846,15 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="statistics" className="space-y-4">
-          <iframe 
-            src="/statistics" 
-            className="w-full h-[calc(100vh-12rem)] rounded-lg border bg-card"
-            title="Kassaoverzicht & Statistieken"
-          />
+          <div className="rounded-lg border bg-card p-6 text-center">
+            <h3 className="mb-2 text-lg font-semibold">Kassaoverzicht & Statistieken</h3>
+            <p className="mb-4 text-muted-foreground">
+              Bekijk gedetailleerde statistieken over verkopen, inkopen en de financiële balans.
+            </p>
+            <Button onClick={() => navigate("/statistics")}>
+              Open Statistieken
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-4">
