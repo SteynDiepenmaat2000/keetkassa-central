@@ -97,6 +97,53 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          category: string
+          created_at: string
+          deposit_per_unit: number | null
+          description: string | null
+          id: string
+          member_id: string | null
+          price_per_unit: number
+          quantity: number
+          settled: boolean
+          total_amount: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          deposit_per_unit?: number | null
+          description?: string | null
+          id?: string
+          member_id?: string | null
+          price_per_unit: number
+          quantity: number
+          settled?: boolean
+          total_amount: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deposit_per_unit?: number | null
+          description?: string | null
+          id?: string
+          member_id?: string | null
+          price_per_unit?: number
+          quantity?: number
+          settled?: boolean
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string

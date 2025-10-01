@@ -10,6 +10,7 @@ import AddMultiple from "./pages/AddMultiple";
 import AddMultipleSelectMembers from "./pages/AddMultipleSelectMembers";
 import Receipt from "./pages/Receipt";
 import Settings from "./pages/Settings";
+import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/add-multiple/:drinkId" element={<AddMultipleSelectMembers />} />
           <Route path="/receipt" element={<Receipt />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/statistics" element={<Statistics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

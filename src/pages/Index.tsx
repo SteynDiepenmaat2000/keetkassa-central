@@ -116,6 +116,15 @@ const Index = () => {
           </Button>
         </Link>
 
+        <Link to="/statistics" className="block">
+          <Button
+            size="lg"
+            className="h-28 w-full whitespace-normal text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
+          >
+            Kassaoverzicht & Statistieken
+          </Button>
+        </Link>
+
         {topDrinkers && topDrinkers.length > 0 && (
           <div className="mt-16 animate-fade-in">
             <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl">
