@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, Trophy } from "lucide-react";
+import { Settings, Trophy, Info } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -193,16 +193,28 @@ const Index = () => {
           </div>
         )}
 
-        <Link to="/settings" className="mt-8 block">
-          <Button
-            size="lg"
-            variant="ghost"
-            className="mx-auto flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <Settings className="h-5 w-5" />
-            Instellingen
-          </Button>
-        </Link>
+        <div className="mt-8 flex justify-center gap-4">
+          <Link to="/info">
+            <Button
+              size="lg"
+              variant="ghost"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <Info className="h-5 w-5" />
+              Info
+            </Button>
+          </Link>
+          <Link to="/settings">
+            <Button
+              size="lg"
+              variant="ghost"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <Settings className="h-5 w-5" />
+              Instellingen
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
