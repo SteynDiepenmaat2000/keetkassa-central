@@ -251,7 +251,7 @@ const Index = () => {
                         <span className="text-2xl">🤠</span>
                       </div>
                       <div>
-                        <div className="font-black text-yellow-900 dark:text-yellow-400 text-lg tracking-wide" style={{ fontFamily: 'serif' }}>
+                        <div className="font-black text-white text-lg tracking-wide drop-shadow-md" style={{ fontFamily: 'serif' }}>
                           {debtor.name.toUpperCase()}
                         </div>
                         <div className="text-xs text-amber-800 dark:text-amber-400 font-semibold">
@@ -260,7 +260,7 @@ const Index = () => {
                       </div>
                     </div>
                     <div className="text-right bg-amber-900 dark:bg-amber-700 text-amber-50 px-3 py-1 rounded border border-amber-950 dark:border-amber-500 shadow-sm">
-                      <div className="text-xs font-bold">BELONING</div>
+                      <div className="text-xs font-bold">SCHULD</div>
                       <div className="text-lg font-black">
                         €{Math.abs(Number(debtor.credit)).toFixed(2)}
                       </div>
