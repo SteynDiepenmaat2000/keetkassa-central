@@ -27,11 +27,11 @@ const Index = () => {
     };
   }, [queryClient]);
 
-  // Toggle between top drinkers and most wanted every 5 seconds
+  // Toggle between top drinkers and most wanted every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setShowMostWanted((prev) => !prev);
-    }, 5000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, []);
@@ -222,37 +222,48 @@ const Index = () => {
 
         {showMostWanted && topDebtors && topDebtors.length > 0 && (
           <div className="mt-16 animate-fade-in" key="most-wanted">
-            <h2 className="mb-8 text-center text-xl font-bold text-destructive sm:text-2xl md:text-3xl animate-scale-in flex items-center justify-center gap-2">
-              <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 animate-bounce-subtle" />
-              MOST WANTED
-              <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 animate-bounce-subtle" />
-            </h2>
+            <div className="mb-8 text-center animate-scale-in">
+              <h2 className="text-4xl font-black text-amber-700 dark:text-amber-500 sm:text-5xl md:text-6xl tracking-wider" style={{ fontFamily: 'serif' }}>
+                ⭐ WANTED ⭐
+              </h2>
+              <p className="text-lg text-amber-800 dark:text-amber-400 mt-2 font-semibold tracking-wide">
+                De meest gezochte wanbetalers van de keet
+              </p>
+            </div>
             
-            <div className="mx-auto max-w-md space-y-3 animate-slide-up">
+            <div className="mx-auto max-w-xl space-y-4 animate-slide-up">
               {topDebtors.map((debtor, index) => (
                 <div 
                   key={debtor.id} 
-                  className="rounded-lg border-2 border-destructive bg-destructive/10 p-4 transition-all hover:scale-105 hover:shadow-lg opacity-0 animate-slide-up"
+                  className="relative rounded-lg border-4 border-amber-800 dark:border-amber-600 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 p-5 transition-all hover:scale-105 hover:shadow-2xl opacity-0 animate-slide-up shadow-lg"
                   style={{ 
-                    animationDelay: `${index * 0.1}s`,
-                    animationFillMode: "forwards"
+                    animationDelay: `${index * 0.15}s`,
+                    animationFillMode: "forwards",
+                    backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px)'
                   }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive text-destructive-foreground font-bold text-xl">
-                        {index + 1}
+                  <div className="absolute top-2 left-2 text-xs font-bold text-amber-900 dark:text-amber-300 tracking-wider">
+                    #{index + 1}
+                  </div>
+                  <div className="flex items-center justify-between pt-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-16 w-16 items-center justify-center rounded border-4 border-amber-900 dark:border-amber-500 bg-amber-200 dark:bg-amber-800 shadow-md">
+                        <span className="text-3xl">🤠</span>
                       </div>
                       <div>
-                        <div className="font-bold text-foreground text-lg">{debtor.name}</div>
-                        <div className="text-sm text-muted-foreground">Wanbetaler</div>
+                        <div className="font-black text-amber-950 dark:text-amber-100 text-2xl tracking-wide" style={{ fontFamily: 'serif' }}>
+                          {debtor.name.toUpperCase()}
+                        </div>
+                        <div className="text-sm text-amber-800 dark:text-amber-400 font-bold mt-1">
+                          Gezocht voor wanbetaling
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-destructive">
+                    <div className="text-right bg-amber-900 dark:bg-amber-700 text-amber-50 px-4 py-2 rounded border-2 border-amber-950 dark:border-amber-500 shadow-md">
+                      <div className="text-xs font-bold tracking-wider">BELONING</div>
+                      <div className="text-2xl font-black">
                         €{Math.abs(Number(debtor.credit)).toFixed(2)}
                       </div>
-                      <div className="text-xs text-muted-foreground">schuld</div>
                     </div>
                   </div>
                 </div>
