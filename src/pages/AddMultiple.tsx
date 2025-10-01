@@ -54,7 +54,7 @@ const AddMultiple = () => {
         {drinks?.map((drink) => (
           <Button
             key={drink.id}
-            className="h-24 flex-col gap-1 text-lg font-medium active:scale-95 sm:h-28 sm:text-xl"
+            className="h-24 flex-col gap-1 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-28 sm:text-xl"
             onClick={() => navigate(`/add-multiple/${drink.id}`)}
           >
             <span className="leading-tight">{drink.name}</span>

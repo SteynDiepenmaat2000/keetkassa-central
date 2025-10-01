@@ -84,7 +84,7 @@ const AddDrink = () => {
         {members?.map((member) => (
           <Button
             key={member.id}
-            className="h-20 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
+            className="h-20 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
             onClick={() => navigate(`/add-drink/${member.id}`)}
           >
             {member.name}

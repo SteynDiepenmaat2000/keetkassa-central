@@ -92,7 +92,7 @@ const Index = () => {
         <Link to="/add-drink" className="block">
           <Button
             size="lg"
-            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
+            className="h-28 w-full whitespace-normal text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Drankje op naam toevoegen
           </Button>
@@ -101,7 +101,7 @@ const Index = () => {
         <Link to="/add-multiple" className="block">
           <Button
             size="lg"
-            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
+            className="h-28 w-full whitespace-normal text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Meerdere drankjes op meerdere namen toevoegen
           </Button>
@@ -110,7 +110,7 @@ const Index = () => {
         <Link to="/receipt" className="block">
           <Button
             size="lg"
-            className="h-28 w-full text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
+            className="h-28 w-full whitespace-normal text-xl font-semibold transition-all active:scale-95 sm:h-32 md:h-36 md:text-2xl"
           >
             Kassabon
           </Button>

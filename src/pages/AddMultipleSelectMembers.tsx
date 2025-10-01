@@ -159,7 +159,7 @@ const AddMultipleSelectMembers = () => {
             <Button
               key={member.id}
               variant={selectedMembers.has(member.id) ? "default" : "outline"}
-              className="h-20 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
+              className="h-20 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-24 sm:text-xl"
               onClick={() => toggleMember(member.id)}
             >
               {member.name}
