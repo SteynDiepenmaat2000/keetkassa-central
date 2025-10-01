@@ -1,10 +1,30 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Settings, Trophy } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 const Index = () => {
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('index-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const currentTime = new Date().toLocaleTimeString("nl-NL", {
     hour: "2-digit",
     minute: "2-digit",

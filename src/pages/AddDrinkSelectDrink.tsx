@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,23 @@ const AddDrinkSelectDrink = () => {
   const queryClient = useQueryClient();
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('add-drink-select-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["drinks"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["member", memberId] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, memberId]);
 
   const { data: member } = useQuery({
     queryKey: ["member", memberId],

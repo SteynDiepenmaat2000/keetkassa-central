@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,26 @@ const AddMultipleSelectMembers = () => {
   const { drinkId } = useParams();
   const queryClient = useQueryClient();
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('add-multiple-members-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["drink", drinkId] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, drinkId]);
 
   const { data: drink } = useQuery({
     queryKey: ["drink", drinkId],

@@ -1,11 +1,27 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 const AddMultiple = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Subscribe to realtime changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('add-multiple-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["drinks"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: drinks } = useQuery({
     queryKey: ["drinks"],
