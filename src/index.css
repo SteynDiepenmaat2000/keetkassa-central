@@ -8,35 +8,35 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 30% 96%;
-    --foreground: 220 20% 10%;
+    --background: 0 0% 18%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card: 0 0% 22%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover: 0 0% 22%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 100% 50%;
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 85%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 25 95% 53%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 210 100% 95%;
-    --accent-foreground: 210 100% 40%;
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 210 100% 50%;
+    --border: 0 0% 30%;
+    --input: 0 0% 25%;
+    --ring: 25 95% 53%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -45,33 +45,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 30% 8%;
-    --foreground: 220 15% 95%;
+    --background: 30 15% 12%;
+    --foreground: 40 20% 95%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 220 15% 95%;
+    --card: 30 15% 15%;
+    --card-foreground: 40 20% 95%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 220 15% 95%;
+    --popover: 30 15% 15%;
+    --popover-foreground: 40 20% 95%;
 
-    --primary: 210 100% 55%;
+    --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 220 15% 95%;
+    --secondary: 35 80% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 30 15% 20%;
+    --muted-foreground: 40 10% 60%;
 
-    --accent: 210 100% 20%;
-    --accent-foreground: 210 100% 70%;
+    --accent: 200 90% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 50%;
+    --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 210 100% 55%;
+    --border: 30 15% 25%;
+    --input: 30 15% 25%;
+    --ring: 25 95% 53%;
     
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -84,12 +84,11 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-gradient-to-br from-background via-background to-primary/5 text-foreground;
+    @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
-    min-height: 100vh;
   }
 
   /* Touch-friendly elements with smooth animations */
@@ -123,38 +122,22 @@ All colors MUST be HSL.
 }
 
 .custom-keyboard.hg-theme-default {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 1rem;
+  background-color: hsl(var(--card));
+  border-radius: 0.5rem;
   padding: 0.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.dark .custom-keyboard.hg-theme-default {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .custom-keyboard.hg-theme-default .hg-button {
   height: 60px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: hsl(var(--muted));
+  border: none;
   color: hsl(var(--foreground));
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
-}
-
-.dark .custom-keyboard.hg-theme-default .hg-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .custom-keyboard.hg-theme-default .hg-button:active {

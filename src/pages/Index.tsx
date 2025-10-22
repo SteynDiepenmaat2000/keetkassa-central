@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Settings, Trophy, Info, AlertTriangle } from "lucide-react";
+import { Settings, Trophy, Info } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const Index = () => {
   const queryClient = useQueryClient();
-  const [showMostWanted, setShowMostWanted] = useState(false);
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -18,7 +17,6 @@ const Index = () => {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
         queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
-        queryClient.invalidateQueries({ queryKey: ["top-debtors"] });
       })
       .subscribe();
 
@@ -26,15 +24,6 @@ const Index = () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
-
-  // Toggle between top drinkers and most wanted every 8 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowMostWanted((prev) => !prev);
-    }, 8000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const currentTime = new Date().toLocaleTimeString("nl-NL", {
     hour: "2-digit",
@@ -83,22 +72,6 @@ const Index = () => {
     },
   });
 
-  const { data: topDebtors } = useQuery({
-    queryKey: ["top-debtors"],
-    queryFn: async () => {
-      const { data: members, error } = await supabase
-        .from("members")
-        .select("id, name, credit")
-        .eq("active", true)
-        .order("credit", { ascending: true })
-        .limit(5);
-
-      if (error) throw error;
-
-      return members.filter(m => Number(m.credit) < 0);
-    },
-  });
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <header className="mb-8 flex items-start justify-between">
@@ -144,8 +117,8 @@ const Index = () => {
         </Link>
 
 
-        {!showMostWanted && topDrinkers && topDrinkers.length > 0 && (
-          <div className="mt-16 animate-fade-in" key="top-drinkers">
+        {topDrinkers && topDrinkers.length > 0 && (
+          <div className="mt-16 animate-fade-in">
             <h2 className="mb-8 text-center text-xl font-bold text-foreground sm:text-2xl md:text-3xl animate-scale-in">
               🏆 Grootste zoeperds van't joar {new Date().getFullYear()}
             </h2>
@@ -216,58 +189,6 @@ const Index = () => {
                   <div className="h-12 w-20 bg-amber-800 dark:bg-amber-900 md:h-14 md:w-28" />
                 </div>
               )}
-            </div>
-          </div>
-        )}
-
-        {showMostWanted && topDebtors && topDebtors.length > 0 && (
-          <div className="mt-16 animate-fade-in" key="most-wanted">
-            <div className="mb-6 text-center animate-scale-in">
-              <h2 className="text-2xl font-black text-amber-700 dark:text-amber-500 sm:text-3xl tracking-wider" style={{ fontFamily: 'serif' }}>
-                ⭐ WANTED ⭐
-              </h2>
-              <p className="text-sm text-amber-800 dark:text-amber-400 mt-1 font-semibold">
-                De meest gezochte wanbetalers
-              </p>
-            </div>
-            
-            <div className="mx-auto max-w-lg space-y-2 animate-slide-up">
-              {topDebtors.slice(0, 3).map((debtor, index) => (
-                <div 
-                  key={debtor.id} 
-                  className="relative rounded border-2 border-amber-800 dark:border-amber-600 bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-950/50 dark:to-amber-900/50 p-3 transition-all hover:scale-105 hover:shadow-lg opacity-0 animate-slide-up shadow-md"
-                  style={{ 
-                    animationDelay: `${index * 0.15}s`,
-                    animationFillMode: "forwards",
-                    backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px)'
-                  }}
-                >
-                  <div className="absolute top-1 left-2 text-xs font-bold text-amber-900 dark:text-amber-300">
-                    #{index + 1}
-                  </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded border-2 border-amber-900 dark:border-amber-500 bg-amber-200 dark:bg-amber-800 shadow-sm">
-                        <span className="text-2xl">🤠</span>
-                      </div>
-                      <div>
-                        <div className="font-black text-white text-lg tracking-wide drop-shadow-md" style={{ fontFamily: 'serif' }}>
-                          {debtor.name.toUpperCase()}
-                        </div>
-                        <div className="text-xs text-amber-800 dark:text-amber-400 font-semibold">
-                          Gezocht voor wanbetaling
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right bg-amber-900 dark:bg-amber-700 text-amber-50 px-3 py-1 rounded border border-amber-950 dark:border-amber-500 shadow-sm">
-                      <div className="text-xs font-bold">SCHULD</div>
-                      <div className="text-lg font-black">
-                        €{Math.abs(Number(debtor.credit)).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}

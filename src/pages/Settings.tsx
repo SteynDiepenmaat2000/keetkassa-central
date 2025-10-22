@@ -58,11 +58,6 @@ const Settings = () => {
   const [resetStep, setResetStep] = useState(1);
   const [verificationCode, setVerificationCode] = useState("");
   const [userVerificationInput, setUserVerificationInput] = useState("");
-  
-  // Credit correction states
-  const [selectedCreditMember, setSelectedCreditMember] = useState<string | null>(null);
-  const [creditAmount, setCreditAmount] = useState("");
-  const [creditReason, setCreditReason] = useState("");
 
   const { data: members } = useQuery({
     queryKey: ["members"],
@@ -347,33 +342,6 @@ const Settings = () => {
     onError: () => toast.error("Er ging iets mis"),
   });
 
-  const addCreditCorrection = useMutation({
-    mutationFn: async () => {
-      if (!selectedCreditMember) return;
-      
-      const member = members?.find((m) => m.id === selectedCreditMember);
-      if (!member) throw new Error("Lid niet gevonden");
-      
-      const amount = parseFloat(creditAmount);
-      const newCredit = Number(member.credit) + amount;
-      
-      const { error } = await supabase
-        .from("members")
-        .update({ credit: newCredit })
-        .eq("id", selectedCreditMember);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-      setSelectedCreditMember(null);
-      setCreditAmount("");
-      setCreditReason("");
-      toast.success("Credit aangepast!");
-    },
-    onError: () => toast.error("Er ging iets mis"),
-  });
-
   const generateVerificationCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
@@ -478,11 +446,10 @@ const Settings = () => {
         </div>
       ) : (
         <Tabs defaultValue="system" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="system">Systeemmenu</TabsTrigger>
           <TabsTrigger value="purchases">Inkopen</TabsTrigger>
           <TabsTrigger value="expenses">Kosten</TabsTrigger>
-          <TabsTrigger value="credits">Credits</TabsTrigger>
           <TabsTrigger value="statistics">Statistieken</TabsTrigger>
           <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
         </TabsList>
@@ -875,59 +842,6 @@ const Settings = () => {
                   </div>
                 </div>
               ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="credits" className="space-y-4">
-          <div className="rounded-lg border bg-card p-4">
-            <h3 className="mb-3 font-semibold">Credit Correctie</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Gebruik dit om credits aan te passen wanneer er iets mis is gegaan met een transactie.
-            </p>
-            <div className="space-y-3">
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={selectedCreditMember || ""}
-                onChange={(e) => setSelectedCreditMember(e.target.value)}
-              >
-                <option value="">Selecteer persoon</option>
-                {members?.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} - Huidig saldo: €{Number(m.credit).toFixed(2)}
-                  </option>
-                ))}
-              </select>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Bedrag (bijv. 5.50 of -2.75)"
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-              />
-              <Input
-                placeholder="Reden (bijv. 'Dubbel aangetikt' of 'Vergeten drankje')"
-                value={creditReason}
-                onChange={(e) => setCreditReason(e.target.value)}
-              />
-              {selectedCreditMember && creditAmount && (
-                <div className="rounded-lg bg-muted p-3">
-                  <div className="text-sm text-muted-foreground mb-1">Nieuw saldo</div>
-                  <div className="text-2xl font-bold">
-                    €{(
-                      Number(members?.find(m => m.id === selectedCreditMember)?.credit || 0) + 
-                      parseFloat(creditAmount)
-                    ).toFixed(2)}
-                  </div>
-                </div>
-              )}
-              <Button 
-                className="w-full" 
-                onClick={() => addCreditCorrection.mutate()}
-                disabled={!selectedCreditMember || !creditAmount || !creditReason}
-              >
-                Credit Aanpassen
-              </Button>
-            </div>
           </div>
         </TabsContent>
 
