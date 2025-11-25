@@ -491,10 +491,9 @@ const Settings = () => {
         </div>
       ) : (
         <Tabs defaultValue="system" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="system">Systeemmenu</TabsTrigger>
-          <TabsTrigger value="purchases">Inkopen</TabsTrigger>
-          <TabsTrigger value="expenses">Kosten</TabsTrigger>
+          <TabsTrigger value="purchases-expenses">Inkopen/Kosten</TabsTrigger>
           <TabsTrigger value="statistics">Statistieken</TabsTrigger>
           <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
         </TabsList>
@@ -664,260 +663,264 @@ const Settings = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="purchases" className="space-y-4">
-          <div className="rounded-lg border bg-card p-4">
-            <h3 className="mb-3 font-semibold">Selecteer categorie</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {PURCHASE_CATEGORIES.map((category) => (
-                <Button
-                  key={category.id}
-                  variant="outline"
-                  className="h-20 whitespace-normal break-words px-2 text-base active:scale-95"
-                  onClick={() => handleCategorySelect(category.id)}
-                >
-                  {category.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Openstaande inkopen</h3>
-            {purchases
-              ?.filter((p: any) => !p.settled)
-              .map((purchase: any) => (
-                <div key={purchase.id} className="rounded-lg border bg-card p-3">
-                  <div className="mb-2 flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="font-semibold">{purchase.members?.name}</div>
-                      <div className="text-sm">
-                        {purchase.category} - {purchase.quantity} stuks
-                      </div>
-                      {purchase.description && (
-                        <div className="text-sm text-muted-foreground">{purchase.description}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-1">
-                        €{Number(purchase.price_per_unit).toFixed(2)}/stuk
-                        {purchase.deposit_per_unit > 0 && ` + €${Number(purchase.deposit_per_unit).toFixed(2)} statiegeld`}
-                      </div>
-                    </div>
-                    <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() =>
-                        settlePurchase.mutate({
-                          id: purchase.id,
-                          method: "credit",
-                          memberId: purchase.member_id,
-                          amount: purchase.total_amount,
-                        })
-                      }
-                    >
-                      Verrekenen via credit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        const roundedAmount = Math.floor(Number(purchase.total_amount) / 10) * 10;
-                        const creditAmount = Number(purchase.total_amount) - roundedAmount;
-                        toast.info(
-                          `Contant: €${roundedAmount}, Credit: €${creditAmount.toFixed(2)}`
-                        );
-                        settlePurchase.mutate({
-                          id: purchase.id,
-                          method: "cash",
-                          memberId: purchase.member_id,
-                          amount: creditAmount,
-                        });
-                      }}
-                    >
-                      Uitbetalen (contant + credit)
-                    </Button>
-                  </div>
-                </div>
-              ))}
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Verrekende inkopen</h3>
-            {purchases
-              ?.filter((p: any) => p.settled)
-              .slice(0, showAllSettledPurchases ? undefined : 5)
-              .map((purchase: any) => (
-                <div key={purchase.id} className="rounded-lg border bg-muted p-3 opacity-60">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold">{purchase.members?.name}</div>
-                      <div className="text-sm">
-                        {purchase.category} - {purchase.quantity} stuks
-                      </div>
-                      {purchase.description && (
-                        <div className="text-sm text-muted-foreground">{purchase.description}</div>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
-                      {purchase.payment_method && (
-                        <div className="text-xs text-muted-foreground">
-                          {purchase.payment_method === "credit" ? "Via credit" : "Uitbetaald"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            {purchases?.filter((p: any) => p.settled).length > 5 && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowAllSettledPurchases(!showAllSettledPurchases)}
-              >
-                {showAllSettledPurchases 
-                  ? 'Toon minder' 
-                  : `Toon alle ${purchases?.filter((p: any) => p.settled).length} verrekende inkopen`}
-              </Button>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="expenses" className="space-y-4">
-          <div className="rounded-lg border bg-card p-4">
-            <h3 className="mb-3 font-semibold">Vrije kosten toevoegen</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Gebruik dit voor kosten die niet onder de standaard inkoop categorieën vallen, zoals schoonmaak, reparaties, etc.
-            </p>
-            <div className="space-y-3">
-              <Input
-                placeholder="Beschrijving (bijv. schoonmaak, reparatie)"
-                value={newExpenseDescription}
-                onChange={(e) => setNewExpenseDescription(e.target.value)}
-              />
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Bedrag"
-                value={newExpenseAmount}
-                onChange={(e) => setNewExpenseAmount(e.target.value)}
-              />
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={selectedExpenseMember || ""}
-                onChange={(e) => setSelectedExpenseMember(e.target.value)}
-              >
-                <option value="">Selecteer persoon die het bedrag voorgeschoten heeft</option>
-                {members?.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
+        <TabsContent value="purchases-expenses" className="space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Inkopen</h2>
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="mb-3 font-semibold">Selecteer categorie</h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {PURCHASE_CATEGORIES.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant="outline"
+                    className="h-20 whitespace-normal break-words px-2 text-base active:scale-95"
+                    onClick={() => handleCategorySelect(category.id)}
+                  >
+                    {category.label}
+                  </Button>
                 ))}
-                {inactiveMembers && inactiveMembers.length > 0 && (
-                  <optgroup label="Inactieve leden">
-                    {inactiveMembers.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-              <Button className="w-full" onClick={() => addExpense.mutate()}>
-                Toevoegen
-              </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <h3 className="font-semibold">Openstaande kosten</h3>
-            {expenses
-              ?.filter((e) => !e.settled)
-              .map((expense: any) => (
-                <div key={expense.id} className="rounded-lg border bg-card p-3">
-                  <div className="mb-2 flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold">{expense.members?.name}</div>
-                      <div className="text-sm text-muted-foreground">{expense.description}</div>
+            <div className="space-y-2">
+              <h3 className="font-semibold">Openstaande inkopen</h3>
+              {purchases
+                ?.filter((p: any) => !p.settled)
+                .map((purchase: any) => (
+                  <div key={purchase.id} className="rounded-lg border bg-card p-3">
+                    <div className="mb-2 flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold">{purchase.members?.name}</div>
+                        <div className="text-sm">
+                          {purchase.category} - {purchase.quantity} stuks
+                        </div>
+                        {purchase.description && (
+                          <div className="text-sm text-muted-foreground">{purchase.description}</div>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          €{Number(purchase.price_per_unit).toFixed(2)}/stuk
+                          {purchase.deposit_per_unit > 0 && ` + €${Number(purchase.deposit_per_unit).toFixed(2)} statiegeld`}
+                        </div>
+                      </div>
+                      <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
                     </div>
-                    <div className="text-lg font-bold">€{Number(expense.amount).toFixed(2)}</div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() =>
+                          settlePurchase.mutate({
+                            id: purchase.id,
+                            method: "credit",
+                            memberId: purchase.member_id,
+                            amount: purchase.total_amount,
+                          })
+                        }
+                      >
+                        Verrekenen via credit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const roundedAmount = Math.floor(Number(purchase.total_amount) / 10) * 10;
+                          const creditAmount = Number(purchase.total_amount) - roundedAmount;
+                          toast.info(
+                            `Contant: €${roundedAmount}, Credit: €${creditAmount.toFixed(2)}`
+                          );
+                          settlePurchase.mutate({
+                            id: purchase.id,
+                            method: "cash",
+                            memberId: purchase.member_id,
+                            amount: creditAmount,
+                          });
+                        }}
+                      >
+                        Uitbetalen (contant + credit)
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() =>
-                        settleExpense.mutate({
-                          id: expense.id,
-                          method: "credit",
-                          memberId: expense.member_id,
-                          amount: expense.amount,
-                        })
-                      }
-                    >
-                      Verrekenen via credit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        const roundedAmount = Math.floor(Number(expense.amount) / 10) * 10;
-                        const creditAmount = Number(expense.amount) - roundedAmount;
-                        toast.info(
-                          `Contant: €${roundedAmount}, Credit: €${creditAmount.toFixed(2)}`
-                        );
-                        settleExpense.mutate({
-                          id: expense.id,
-                          method: "cash",
-                          memberId: expense.member_id,
-                          amount: creditAmount,
-                        });
-                      }}
-                    >
-                      Uitbetalen (contant + credit)
-                    </Button>
-                  </div>
-                </div>
-              ))}
-          </div>
+                ))}
+            </div>
 
-          <div className="space-y-2">
-            <h3 className="font-semibold">Verrekende kosten</h3>
-            {expenses
-              ?.filter((e) => e.settled)
-              .slice(0, showAllSettledExpenses ? undefined : 5)
-              .map((expense: any) => (
-                <div key={expense.id} className="rounded-lg border bg-muted p-3 opacity-60">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="font-semibold">{expense.members?.name}</div>
-                      <div className="text-sm text-muted-foreground">{expense.description}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold">€{Number(expense.amount).toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {expense.payment_method === "credit" ? "Via credit" : "Uitbetaald"}
+            <div className="space-y-2">
+              <h3 className="font-semibold">Verrekende inkopen</h3>
+              {purchases
+                ?.filter((p: any) => p.settled)
+                .slice(0, showAllSettledPurchases ? undefined : 5)
+                .map((purchase: any) => (
+                  <div key={purchase.id} className="rounded-lg border bg-muted p-3 opacity-60">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-semibold">{purchase.members?.name}</div>
+                        <div className="text-sm">
+                          {purchase.category} - {purchase.quantity} stuks
+                        </div>
+                        {purchase.description && (
+                          <div className="text-sm text-muted-foreground">{purchase.description}</div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
+                        {purchase.payment_method && (
+                          <div className="text-xs text-muted-foreground">
+                            {purchase.payment_method === "credit" ? "Via credit" : "Uitbetaald"}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            {expenses?.filter((e) => e.settled).length > 5 && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowAllSettledExpenses(!showAllSettledExpenses)}
-              >
-                {showAllSettledExpenses 
-                  ? 'Toon minder' 
-                  : `Toon alle ${expenses?.filter((e) => e.settled).length} verrekende kosten`}
-              </Button>
-            )}
+                ))}
+              {purchases?.filter((p: any) => p.settled).length > 5 && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAllSettledPurchases(!showAllSettledPurchases)}
+                >
+                  {showAllSettledPurchases 
+                    ? 'Toon minder' 
+                    : `Toon alle ${purchases?.filter((p: any) => p.settled).length} verrekende inkopen`}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Overige Kosten</h2>
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="mb-3 font-semibold">Vrije kosten toevoegen</h3>
+              <p className="mb-4 text-sm text-muted-foreground">
+                Gebruik dit voor kosten die niet onder de standaard inkoop categorieën vallen, zoals schoonmaak, reparaties, etc.
+              </p>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Beschrijving (bijv. schoonmaak, reparatie)"
+                  value={newExpenseDescription}
+                  onChange={(e) => setNewExpenseDescription(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Bedrag"
+                  value={newExpenseAmount}
+                  onChange={(e) => setNewExpenseAmount(e.target.value)}
+                />
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={selectedExpenseMember || ""}
+                  onChange={(e) => setSelectedExpenseMember(e.target.value)}
+                >
+                  <option value="">Selecteer persoon die het bedrag voorgeschoten heeft</option>
+                  {members?.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                  {inactiveMembers && inactiveMembers.length > 0 && (
+                    <optgroup label="Inactieve leden">
+                      {inactiveMembers.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <Button className="w-full" onClick={() => addExpense.mutate()}>
+                  Toevoegen
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold">Openstaande kosten</h3>
+              {expenses
+                ?.filter((e) => !e.settled)
+                .map((expense: any) => (
+                  <div key={expense.id} className="rounded-lg border bg-card p-3">
+                    <div className="mb-2 flex items-start justify-between">
+                      <div>
+                        <div className="font-semibold">{expense.members?.name}</div>
+                        <div className="text-sm text-muted-foreground">{expense.description}</div>
+                      </div>
+                      <div className="text-lg font-bold">€{Number(expense.amount).toFixed(2)}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() =>
+                          settleExpense.mutate({
+                            id: expense.id,
+                            method: "credit",
+                            memberId: expense.member_id,
+                            amount: expense.amount,
+                          })
+                        }
+                      >
+                        Verrekenen via credit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const roundedAmount = Math.floor(Number(expense.amount) / 10) * 10;
+                          const creditAmount = Number(expense.amount) - roundedAmount;
+                          toast.info(
+                            `Contant: €${roundedAmount}, Credit: €${creditAmount.toFixed(2)}`
+                          );
+                          settleExpense.mutate({
+                            id: expense.id,
+                            method: "cash",
+                            memberId: expense.member_id,
+                            amount: creditAmount,
+                          });
+                        }}
+                      >
+                        Uitbetalen (contant + credit)
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-semibold">Verrekende kosten</h3>
+              {expenses
+                ?.filter((e) => e.settled)
+                .slice(0, showAllSettledExpenses ? undefined : 5)
+                .map((expense: any) => (
+                  <div key={expense.id} className="rounded-lg border bg-muted p-3 opacity-60">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-semibold">{expense.members?.name}</div>
+                        <div className="text-sm text-muted-foreground">{expense.description}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold">€{Number(expense.amount).toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {expense.payment_method === "credit" ? "Via credit" : "Uitbetaald"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              {expenses?.filter((e) => e.settled).length > 5 && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAllSettledExpenses(!showAllSettledExpenses)}
+                >
+                  {showAllSettledExpenses 
+                    ? 'Toon minder' 
+                    : `Toon alle ${expenses?.filter((e) => e.settled).length} verrekende kosten`}
+                </Button>
+              )}
+            </div>
           </div>
         </TabsContent>
 
