@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/database";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -12,65 +12,33 @@ const AddMultipleSelectMembers = () => {
   const queryClient = useQueryClient();
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
 
-  // Subscribe to realtime changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('add-multiple-members-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["drink", drinkId] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, drinkId]);
-
   const { data: drink } = useQuery({
     queryKey: ["drink", drinkId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("drinks")
-        .select("*")
-        .eq("id", drinkId)
-        .single();
-      if (error) throw error;
-      return data;
+      if (!drinkId) return null;
+      return db.getDrink(drinkId);
     },
   });
 
   const { data: members } = useQuery({
     queryKey: ["members-sorted"],
     queryFn: async () => {
-      const { data: membersData, error: membersError } = await supabase
-        .from("members")
-        .select("*")
-        .eq("active", true);
-      
-      if (membersError) throw membersError;
+      const [membersData, transactions] = await Promise.all([
+        db.getMembers(true),
+        db.getTransactions(1000),
+      ]);
 
-      const membersWithLastTransaction = await Promise.all(
-        membersData.map(async (member) => {
-          const { data: lastTransaction } = await supabase
-            .from("transactions")
-            .select("created_at")
-            .eq("member_id", member.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
+      const memberLastTransaction = new Map<string, string>();
+      transactions.forEach((t) => {
+        if (!memberLastTransaction.has(t.member_id)) {
+          memberLastTransaction.set(t.member_id, t.created_at);
+        }
+      });
 
-          return {
-            ...member,
-            last_transaction: lastTransaction?.created_at || null,
-          };
-        })
-      );
+      const membersWithLastTransaction = membersData.map((member) => ({
+        ...member,
+        last_transaction: memberLastTransaction.get(member.id) || null,
+      }));
 
       return membersWithLastTransaction.sort((a, b) => {
         if (!a.last_transaction && !b.last_transaction) return a.name.localeCompare(b.name);
@@ -97,28 +65,12 @@ const AddMultipleSelectMembers = () => {
     mutationFn: async () => {
       if (!drink || selectedMembers.size === 0) return;
 
-      const transactions = Array.from(selectedMembers).map((memberId) => ({
-        member_id: memberId,
-        drink_id: drink.id,
-        price: drink.price,
-      }));
-
-      const { error: transactionError } = await supabase
-        .from("transactions")
-        .insert(transactions);
-
-      if (transactionError) throw transactionError;
-
       for (const memberId of selectedMembers) {
-        const member = members?.find((m) => m.id === memberId);
-        if (member) {
-          const { error: updateError } = await supabase
-            .from("members")
-            .update({ credit: Number(member.credit) - Number(drink.price) })
-            .eq("id", member.id);
-
-          if (updateError) throw updateError;
-        }
+        await db.createTransaction({
+          member_id: memberId,
+          drink_id: drink.id,
+          price: drink.price,
+        });
       }
     },
     onSuccess: () => {

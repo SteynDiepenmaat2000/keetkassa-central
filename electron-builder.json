@@ -1,0 +1,19 @@
+{
+  "appId": "app.lovable.keetkassa",
+  "productName": "KeetKassa",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "node_modules/**/*"
+  ],
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Office"
+  },
+  "extraMetadata": {
+    "main": "electron/main.js"
+  }
+}

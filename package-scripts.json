@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "electron:dev": "cross-env NODE_ENV=development electron electron/main.js",
+    "electron:build": "npm run build && electron-builder",
+    "electron:start": "wait-on http://localhost:8080 && npm run electron:dev"
+  }
+}

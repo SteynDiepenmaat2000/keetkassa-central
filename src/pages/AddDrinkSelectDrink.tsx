@@ -1,10 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/database";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,46 +25,17 @@ const AddDrinkSelectDrink = () => {
   const [showSizeDialog, setShowSizeDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Subscribe to realtime changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('add-drink-select-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'drinks' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["drinks"] });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["member", memberId] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, memberId]);
-
   const { data: member } = useQuery({
     queryKey: ["member", memberId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members")
-        .select("*")
-        .eq("id", memberId)
-        .single();
-      if (error) throw error;
-      return data;
+      if (!memberId) return null;
+      return db.getMember(memberId);
     },
   });
 
   const { data: drinks } = useQuery({
     queryKey: ["drinks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("drinks")
-        .select("*")
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => db.getDrinks(),
   });
 
   const addTransaction = useMutation({
@@ -72,22 +43,11 @@ const AddDrinkSelectDrink = () => {
       const drink = drinks?.find((d) => d.id === drinkId);
       if (!member || !drink) return;
 
-      const { error: transactionError } = await supabase
-        .from("transactions")
-        .insert({
-          member_id: member.id,
-          drink_id: drink.id,
-          price: drink.price,
-        });
-
-      if (transactionError) throw transactionError;
-
-      const { error: updateError } = await supabase
-        .from("members")
-        .update({ credit: Number(member.credit) - Number(drink.price) })
-        .eq("id", member.id);
-
-      if (updateError) throw updateError;
+      await db.createTransaction({
+        member_id: member.id,
+        drink_id: drink.id,
+        price: drink.price,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
@@ -107,7 +67,6 @@ const AddDrinkSelectDrink = () => {
     const groups: Record<string, any[]> = {};
     
     drinks.forEach(drink => {
-      // Extract base name by removing common size indicators
       let baseName = drink.name
         .replace(/\s*(klein|small|groot|large)\s*/gi, '')
         .trim();
@@ -127,11 +86,9 @@ const AddDrinkSelectDrink = () => {
     const group = drinkGroups[groupName];
     
     if (group.length === 1) {
-      // Only one variant, select directly
       setSelectedDrink(group[0].id);
       setShowConfirmDialog(true);
     } else {
-      // Multiple variants, show size selection
       setSelectedDrinkGroup(groupName);
       setShowSizeDialog(true);
     }
@@ -181,8 +138,6 @@ const AddDrinkSelectDrink = () => {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {Object.entries(drinkGroups).map(([groupName, groupDrinks]) => {
-          const avgPrice = groupDrinks.reduce((sum, d) => sum + Number(d.price), 0) / groupDrinks.length;
-          
           return (
             <Button
               key={groupName}
