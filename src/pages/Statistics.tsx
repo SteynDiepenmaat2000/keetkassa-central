@@ -172,16 +172,34 @@ const Statistics = () => {
     };
   }).sort((a, b) => b.growth - a.growth);
 
-  // Purchase statistics by category
+  // Purchase statistics by category - calculate actual cost per unit (excluding deposit)
   const purchaseStats = purchases?.reduce((acc: any, purchase) => {
     if (!acc[purchase.category]) {
       acc[purchase.category] = {
-        quantity: 0,
-        totalAmount: 0,
+        totalUnits: 0, // Total individual units purchased
+        totalCostExcludingDeposit: 0, // Total cost excluding deposit
+        purchases: [],
       };
     }
-    acc[purchase.category].quantity += purchase.quantity;
-    acc[purchase.category].totalAmount += Number(purchase.total_amount);
+    
+    // Calculate actual units purchased (quantity * units_per_package)
+    const unitsPerPackage = purchase.units_per_package || 1;
+    const totalUnits = purchase.quantity * unitsPerPackage;
+    
+    // Calculate cost per unit excluding deposit
+    const pricePerPackage = Number(purchase.price_per_unit);
+    const realCostPerUnit = pricePerPackage / unitsPerPackage;
+    const totalCostExcludingDeposit = realCostPerUnit * totalUnits;
+    
+    acc[purchase.category].totalUnits += totalUnits;
+    acc[purchase.category].totalCostExcludingDeposit += totalCostExcludingDeposit;
+    acc[purchase.category].purchases.push({
+      unitsPerPackage,
+      totalUnits,
+      realCostPerUnit,
+      totalCostExcludingDeposit,
+    });
+    
     return acc;
   }, {});
 
@@ -195,9 +213,9 @@ const Statistics = () => {
     return 'Overig';
   };
 
-  // Calculate learned average cost per unit for each category from historical purchases
+  // Calculate learned average cost per unit for each category from historical purchases (excluding deposit)
   const learnedCategoryAverages = Object.entries(purchaseStats || {}).reduce((acc: any, [category, stats]: [string, any]) => {
-    acc[category] = stats.quantity > 0 ? stats.totalAmount / stats.quantity : 0;
+    acc[category] = stats.totalUnits > 0 ? stats.totalCostExcludingDeposit / stats.totalUnits : 0;
     return acc;
   }, {});
 
@@ -252,15 +270,15 @@ const Statistics = () => {
   // Combine with purchase data to calculate actual profit margins
   const profitByCategory = Object.keys(categoryProfitAnalysis).map((category) => {
     const salesData = categoryProfitAnalysis[category];
-    const purchaseData = purchaseStats?.[category] || { quantity: 0, totalAmount: 0 };
+    const purchaseData = purchaseStats?.[category] || { totalUnits: 0, totalCostExcludingDeposit: 0 };
     
-    const totalCost = purchaseData.totalAmount;
+    const totalCost = purchaseData.totalCostExcludingDeposit;
     const totalRevenue = salesData.totalRevenue;
     const profit = totalRevenue - totalCost;
     const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
     
     // Calculate expected vs actual sales ratio
-    const purchasedUnits = purchaseData.quantity;
+    const purchasedUnits = purchaseData.totalUnits;
     const soldUnits = salesData.totalSold;
     const salesRatio = purchasedUnits > 0 ? (soldUnits / purchasedUnits) * 100 : 0;
     

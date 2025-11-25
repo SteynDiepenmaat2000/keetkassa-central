@@ -54,6 +54,7 @@ const Settings = () => {
   const [purchaseDeposit, setPurchaseDeposit] = useState("");
   const [purchaseDescription, setPurchaseDescription] = useState("");
   const [purchaseMemberId, setPurchaseMemberId] = useState<string | null>(null);
+  const [purchaseUnitsPerPackage, setPurchaseUnitsPerPackage] = useState("");
   
   // Database reset states
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -323,6 +324,11 @@ const Settings = () => {
       if (purchaseDeposit && (isNaN(depositPerUnit) || depositPerUnit < 0)) {
         throw new Error("Statiegeld moet een geldig getal zijn");
       }
+
+      const unitsPerPackage = purchaseUnitsPerPackage ? parseInt(purchaseUnitsPerPackage) : 1;
+      if (purchaseUnitsPerPackage && (isNaN(unitsPerPackage) || unitsPerPackage <= 0)) {
+        throw new Error("Stuks per krat moet een geldig positief getal zijn");
+      }
       
       const totalAmount = (pricePerUnit + depositPerUnit) * quantity;
       const categoryLabel = PURCHASE_CATEGORIES.find(c => c.id === selectedCategory)?.label || "";
@@ -335,6 +341,7 @@ const Settings = () => {
         deposit_per_unit: depositPerUnit,
         total_amount: totalAmount,
         description: purchaseDescription.trim(),
+        units_per_package: unitsPerPackage,
       });
       if (error) throw error;
     },
@@ -347,6 +354,7 @@ const Settings = () => {
       setPurchaseDeposit("");
       setPurchaseDescription("");
       setPurchaseMemberId(null);
+      setPurchaseUnitsPerPackage("");
       toast.success("Inkoop toegevoegd!");
     },
     onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
@@ -692,14 +700,16 @@ const Settings = () => {
                       <div className="flex-1">
                         <div className="font-semibold">{purchase.members?.name}</div>
                         <div className="text-sm">
-                          {purchase.category} - {purchase.quantity} stuks
+                          {purchase.category} - {purchase.quantity} {purchase.units_per_package > 1 ? `kratten (${purchase.units_per_package} stuks/krat = ${purchase.quantity * purchase.units_per_package} stuks totaal)` : 'stuks'}
                         </div>
                         {purchase.description && (
                           <div className="text-sm text-muted-foreground">{purchase.description}</div>
                         )}
                         <div className="text-xs text-muted-foreground mt-1">
-                          €{Number(purchase.price_per_unit).toFixed(2)}/stuk
-                          {purchase.deposit_per_unit > 0 && ` + €${Number(purchase.deposit_per_unit).toFixed(2)} statiegeld`}
+                          {purchase.units_per_package > 1 
+                            ? `€${Number(purchase.price_per_unit).toFixed(2)}/krat (€${(Number(purchase.price_per_unit) / purchase.units_per_package).toFixed(4)}/stuk)`
+                            : `€${Number(purchase.price_per_unit).toFixed(2)}/stuk`}
+                          {purchase.deposit_per_unit > 0 && ` + €${Number(purchase.deposit_per_unit).toFixed(2)} statiegeld/stuk`}
                         </div>
                       </div>
                       <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
@@ -756,7 +766,7 @@ const Settings = () => {
                       <div>
                         <div className="font-semibold">{purchase.members?.name}</div>
                         <div className="text-sm">
-                          {purchase.category} - {purchase.quantity} stuks
+                          {purchase.category} - {purchase.quantity} {purchase.units_per_package > 1 ? `kratten (${purchase.units_per_package} stuks/krat)` : 'stuks'}
                         </div>
                         {purchase.description && (
                           <div className="text-sm text-muted-foreground">{purchase.description}</div>
@@ -965,26 +975,49 @@ const Settings = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Prijs per stuk (€)"
-              value={purchasePricePerUnit}
-              onChange={(e) => setPurchasePricePerUnit(e.target.value)}
-            />
-            <Input
-              type="number"
-              placeholder="Aantal stuks"
-              value={purchaseQuantity}
-              onChange={(e) => setPurchaseQuantity(e.target.value)}
-            />
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="Statiegeld per stuk (optioneel)"
-              value={purchaseDeposit}
-              onChange={(e) => setPurchaseDeposit(e.target.value)}
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Totaalprijs krat/verpakking (€)</label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="bijv. 15,99"
+                value={purchasePricePerUnit}
+                onChange={(e) => setPurchasePricePerUnit(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Stuks per krat/verpakking</label>
+              <Input
+                type="number"
+                placeholder="bijv. 24 flesjes"
+                value={purchaseUnitsPerPackage}
+                onChange={(e) => setPurchaseUnitsPerPackage(e.target.value)}
+              />
+              {purchaseUnitsPerPackage && purchasePricePerUnit && (
+                <p className="text-xs text-muted-foreground">
+                  = €{(parseFloat(purchasePricePerUnit) / parseInt(purchaseUnitsPerPackage)).toFixed(4)} per stuk
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Aantal kratten/verpakkingen</label>
+              <Input
+                type="number"
+                placeholder="bijv. 5 kratten"
+                value={purchaseQuantity}
+                onChange={(e) => setPurchaseQuantity(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Statiegeld per stuk (optioneel)</label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="€0,15"
+                value={purchaseDeposit}
+                onChange={(e) => setPurchaseDeposit(e.target.value)}
+              />
+            </div>
             {selectedCategory === "general" && (
               <Input
                 placeholder="Beschrijving"

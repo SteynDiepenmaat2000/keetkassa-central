@@ -139,6 +139,7 @@ export type Database = {
           quantity: number
           settled: boolean
           total_amount: number
+          units_per_package: number | null
         }
         Insert: {
           category: string
@@ -152,6 +153,7 @@ export type Database = {
           quantity: number
           settled?: boolean
           total_amount: number
+          units_per_package?: number | null
         }
         Update: {
           category?: string
@@ -165,6 +167,7 @@ export type Database = {
           quantity?: number
           settled?: boolean
           total_amount?: number
+          units_per_package?: number | null
         }
         Relationships: [
           {
