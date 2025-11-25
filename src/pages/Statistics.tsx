@@ -214,7 +214,44 @@ const Statistics = () => {
     return 'Bier'; // Default to Bier for unknown drinks
   };
 
+  // Determine glass size based on drink name (for Frisdrank and Wijn)
+  const getGlassSize = (drinkName: string): number => {
+    const name = drinkName.toLowerCase();
+    // Klein glas = 0.3L, Groot glas = 0.5L
+    if (name.includes('klein') || name.includes('small')) return 0.3;
+    return 0.5; // Default to groot glas
+  };
+
+  // Calculate learned average cost per liter for drinks with bottle sizes (Frisdrank, Wijn)
+  const learnedCostPerLiter: Record<string, number> = {};
+  
+  if (purchases && purchases.length > 0) {
+    const purchasesWithBottleSize = purchases.filter((p: any) => 
+      p.bottle_size && p.bottle_size > 0 && (p.category === 'Frisdrank' || p.category === 'Wijn')
+    );
+    
+    // Group by category and calculate average cost per liter
+    ['Frisdrank', 'Wijn'].forEach(category => {
+      const categoryPurchases = purchasesWithBottleSize.filter((p: any) => p.category === category);
+      
+      if (categoryPurchases.length > 0) {
+        const totalLiters = categoryPurchases.reduce((sum: number, p: any) => {
+          const unitsPerPackage = p.units_per_package || 1;
+          const totalUnits = p.quantity * unitsPerPackage;
+          return sum + (totalUnits * p.bottle_size);
+        }, 0);
+        
+        const totalCost = categoryPurchases.reduce((sum: number, p: any) => {
+          return sum + (p.price_per_unit * p.quantity);
+        }, 0);
+        
+        learnedCostPerLiter[category] = totalLiters > 0 ? totalCost / totalLiters : 0;
+      }
+    });
+  }
+
   // Calculate learned average cost per unit for each category from historical purchases (excluding deposit)
+  // For categories without bottle_size (Bier, etc.), use the old method
   const learnedCategoryAverages = Object.entries(purchaseStats || {}).reduce((acc: any, [category, stats]: [string, any]) => {
     acc[category] = stats.totalUnits > 0 ? stats.totalCostExcludingDeposit / stats.totalUnits : 0;
     return acc;
@@ -223,7 +260,18 @@ const Statistics = () => {
   // Enhanced sales statistics with learned cost estimation per drink
   const enhancedSalesStats = Object.entries(salesStats || {}).map(([drinkName, stats]: [string, any]) => {
     const category = getCategoryForDrink(drinkName);
-    const learnedCostPerUnit = learnedCategoryAverages[category] || 0;
+    
+    let learnedCostPerUnit = 0;
+    
+    // For Frisdrank and Wijn, calculate cost per glass based on bottle size data
+    if ((category === 'Frisdrank' || category === 'Wijn') && learnedCostPerLiter[category]) {
+      const glassSize = getGlassSize(drinkName);
+      learnedCostPerUnit = learnedCostPerLiter[category] * glassSize;
+    } else {
+      // For other categories, use the average cost per unit
+      learnedCostPerUnit = learnedCategoryAverages[category] || 0;
+    }
+    
     const estimatedTotalCost = stats.quantity * learnedCostPerUnit;
     const estimatedProfit = stats.totalRevenue - estimatedTotalCost;
     const estimatedMargin = stats.totalRevenue > 0 ? (estimatedProfit / stats.totalRevenue) * 100 : 0;

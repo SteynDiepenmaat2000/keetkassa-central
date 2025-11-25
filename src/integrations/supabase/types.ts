@@ -128,6 +128,7 @@ export type Database = {
       }
       purchases: {
         Row: {
+          bottle_size: number | null
           category: string
           created_at: string
           deposit_per_unit: number | null
@@ -142,6 +143,7 @@ export type Database = {
           units_per_package: number | null
         }
         Insert: {
+          bottle_size?: number | null
           category: string
           created_at?: string
           deposit_per_unit?: number | null
@@ -156,6 +158,7 @@ export type Database = {
           units_per_package?: number | null
         }
         Update: {
+          bottle_size?: number | null
           category?: string
           created_at?: string
           deposit_per_unit?: number | null

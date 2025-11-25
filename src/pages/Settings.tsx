@@ -55,6 +55,7 @@ const Settings = () => {
   const [purchaseDescription, setPurchaseDescription] = useState("");
   const [purchaseMemberId, setPurchaseMemberId] = useState<string | null>(null);
   const [purchaseUnitsPerPackage, setPurchaseUnitsPerPackage] = useState("");
+  const [purchaseBottleSize, setPurchaseBottleSize] = useState("");
   
   // Database reset states
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -333,6 +334,8 @@ const Settings = () => {
       const totalAmount = (pricePerUnit + depositPerUnit) * quantity;
       const categoryLabel = PURCHASE_CATEGORIES.find(c => c.id === selectedCategory)?.label || "";
       
+      const bottleSize = purchaseBottleSize ? parseFloat(purchaseBottleSize) : null;
+      
       const { error } = await supabase.from("purchases").insert({
         member_id: purchaseMemberId,
         category: categoryLabel,
@@ -342,6 +345,7 @@ const Settings = () => {
         total_amount: totalAmount,
         description: purchaseDescription.trim(),
         units_per_package: unitsPerPackage,
+        bottle_size: bottleSize,
       });
       if (error) throw error;
     },
@@ -355,6 +359,7 @@ const Settings = () => {
       setPurchaseDescription("");
       setPurchaseMemberId(null);
       setPurchaseUnitsPerPackage("");
+      setPurchaseBottleSize("");
       toast.success("Inkoop toegevoegd!");
     },
     onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
@@ -1018,6 +1023,31 @@ const Settings = () => {
                 onChange={(e) => setPurchaseDeposit(e.target.value)}
               />
             </div>
+            {(selectedCategory === "soda" || selectedCategory === "wine") && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Flesgrootte (liter)</label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={purchaseBottleSize}
+                  onChange={(e) => setPurchaseBottleSize(e.target.value)}
+                >
+                  <option value="">Selecteer flesgrootte</option>
+                  <option value="0.33">0,33L (klein flesje)</option>
+                  <option value="0.5">0,5L</option>
+                  <option value="1.0">1,0L</option>
+                  <option value="1.25">1,25L</option>
+                  <option value="1.5">1,5L</option>
+                  <option value="2.0">2,0L</option>
+                </select>
+                {purchaseBottleSize && purchasePricePerUnit && purchaseUnitsPerPackage && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>📊 Kosten per glas berekening:</p>
+                    <p>• Klein glas (0,3L): €{((parseFloat(purchasePricePerUnit) / parseInt(purchaseUnitsPerPackage)) / parseFloat(purchaseBottleSize) * 0.3).toFixed(3)}</p>
+                    <p>• Groot glas (0,5L): €{((parseFloat(purchasePricePerUnit) / parseInt(purchaseUnitsPerPackage)) / parseFloat(purchaseBottleSize) * 0.5).toFixed(3)}</p>
+                  </div>
+                )}
+              </div>
+            )}
             {selectedCategory === "general" && (
               <Input
                 placeholder="Beschrijving"
