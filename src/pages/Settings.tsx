@@ -144,7 +144,10 @@ const Settings = () => {
 
   const addMember = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("members").insert({ name: newMemberName });
+      if (!newMemberName.trim()) {
+        throw new Error("Naam is verplicht");
+      }
+      const { error } = await supabase.from("members").insert({ name: newMemberName.trim() });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -152,7 +155,7 @@ const Settings = () => {
       setNewMemberName("");
       toast.success("Lid toegevoegd!");
     },
-    onError: () => toast.error("Er ging iets mis"),
+    onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
   });
 
   const deactivateMember = useMutation({
@@ -191,9 +194,16 @@ const Settings = () => {
 
   const addDrink = useMutation({
     mutationFn: async () => {
+      if (!newDrinkName.trim()) {
+        throw new Error("Naam is verplicht");
+      }
+      const price = parseFloat(newDrinkPrice);
+      if (isNaN(price) || price <= 0) {
+        throw new Error("Prijs moet een geldig positief getal zijn");
+      }
       const { error } = await supabase
         .from("drinks")
-        .insert({ name: newDrinkName, price: parseFloat(newDrinkPrice) });
+        .insert({ name: newDrinkName.trim(), price });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -202,7 +212,7 @@ const Settings = () => {
       setNewDrinkPrice("");
       toast.success("Drankje toegevoegd!");
     },
-    onError: () => toast.error("Er ging iets mis"),
+    onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
   });
 
   const updateDrink = useMutation({
@@ -232,11 +242,20 @@ const Settings = () => {
 
   const addExpense = useMutation({
     mutationFn: async () => {
-      if (!selectedExpenseMember) return;
+      if (!selectedExpenseMember) {
+        throw new Error("Selecteer een persoon");
+      }
+      if (!newExpenseDescription.trim()) {
+        throw new Error("Beschrijving is verplicht");
+      }
+      const amount = parseFloat(newExpenseAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Bedrag moet een geldig positief getal zijn");
+      }
       const { error } = await supabase.from("expenses").insert({
         member_id: selectedExpenseMember,
-        description: newExpenseDescription,
-        amount: parseFloat(newExpenseAmount),
+        description: newExpenseDescription.trim(),
+        amount,
       });
       if (error) throw error;
     },
@@ -247,7 +266,7 @@ const Settings = () => {
       setSelectedExpenseMember(null);
       toast.success("Kosten toegevoegd!");
     },
-    onError: () => toast.error("Er ging iets mis"),
+    onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
   });
 
   const settleExpense = useMutation({
@@ -281,13 +300,29 @@ const Settings = () => {
 
   const addPurchase = useMutation({
     mutationFn: async () => {
-      if (!purchaseMemberId || !selectedCategory) return;
+      if (!purchaseMemberId) {
+        throw new Error("Selecteer een persoon");
+      }
+      if (!selectedCategory) {
+        throw new Error("Selecteer een categorie");
+      }
       
       const pricePerUnit = parseFloat(purchasePricePerUnit);
-      const quantity = parseInt(purchaseQuantity);
-      const depositPerUnit = purchaseDeposit ? parseFloat(purchaseDeposit) : 0;
-      const totalAmount = (pricePerUnit + depositPerUnit) * quantity;
+      if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
+        throw new Error("Prijs per stuk moet een geldig positief getal zijn");
+      }
       
+      const quantity = parseInt(purchaseQuantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        throw new Error("Aantal moet een geldig positief getal zijn");
+      }
+      
+      const depositPerUnit = purchaseDeposit ? parseFloat(purchaseDeposit) : 0;
+      if (purchaseDeposit && (isNaN(depositPerUnit) || depositPerUnit < 0)) {
+        throw new Error("Statiegeld moet een geldig getal zijn");
+      }
+      
+      const totalAmount = (pricePerUnit + depositPerUnit) * quantity;
       const categoryLabel = PURCHASE_CATEGORIES.find(c => c.id === selectedCategory)?.label || "";
       
       const { error } = await supabase.from("purchases").insert({
@@ -297,7 +332,7 @@ const Settings = () => {
         quantity,
         deposit_per_unit: depositPerUnit,
         total_amount: totalAmount,
-        description: purchaseDescription,
+        description: purchaseDescription.trim(),
       });
       if (error) throw error;
     },
@@ -312,7 +347,7 @@ const Settings = () => {
       setPurchaseMemberId(null);
       toast.success("Inkoop toegevoegd!");
     },
-    onError: () => toast.error("Er ging iets mis"),
+    onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
   });
 
   const settlePurchase = useMutation({

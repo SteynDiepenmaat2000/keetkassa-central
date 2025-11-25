@@ -37,36 +37,45 @@ const Index = () => {
 
   const { data: topDrinkers } = useQuery({
     queryKey: ["top-drinkers"],
-    queryFn: async () => {
+    queryFn: async (): Promise<Array<{
+      id: string;
+      name: string;
+      drinkCount: number;
+      totalSpent: number;
+    }>> => {
       const yearStart = new Date(new Date().getFullYear(), 0, 1);
 
-      const { data: members, error: membersError } = await supabase
-        .from("members")
-        .select("id, name")
-        .eq("active", true);
+      // Fetch all transactions in one query for better performance
+      const { data: transactions, error: transError } = await supabase
+        .from("transactions")
+        .select("member_id, price, members!inner(id, name, active)")
+        .gte("created_at", yearStart.toISOString())
+        .eq("members.active", true);
 
-      if (membersError) throw membersError;
+      if (transError) throw transError;
 
-      const membersWithStats = await Promise.all(
-        members.map(async (member) => {
-          const { data: transactions, error: transError } = await supabase
-            .from("transactions")
-            .select("price")
-            .eq("member_id", member.id)
-            .gte("created_at", yearStart.toISOString());
-
-          if (transError) throw transError;
-
-          return {
-            ...member,
-            drinkCount: transactions?.length || 0,
-            totalSpent: transactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0,
+      // Group transactions by member
+      const memberStats = (transactions || []).reduce((acc: Record<string, {
+        id: string;
+        name: string;
+        drinkCount: number;
+        totalSpent: number;
+      }>, t: any) => {
+        const memberId = t.member_id;
+        if (!acc[memberId]) {
+          acc[memberId] = {
+            id: memberId,
+            name: t.members.name,
+            drinkCount: 0,
+            totalSpent: 0,
           };
-        })
-      );
+        }
+        acc[memberId].drinkCount += 1;
+        acc[memberId].totalSpent += Number(t.price);
+        return acc;
+      }, {});
 
-      return membersWithStats
-        .filter((m) => m.drinkCount > 0)
+      return Object.values(memberStats)
         .sort((a, b) => b.drinkCount - a.drinkCount)
         .slice(0, 3);
     },
