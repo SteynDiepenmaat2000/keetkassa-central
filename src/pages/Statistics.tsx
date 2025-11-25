@@ -185,6 +185,71 @@ const Statistics = () => {
     return acc;
   }, {});
 
+  // Map drink names to categories (case insensitive matching)
+  const getCategoryForDrink = (drinkName: string): string => {
+    const name = drinkName.toLowerCase();
+    if (name.includes('bier') || name.includes('beer')) return 'Bier';
+    if (name.includes('cola') || name.includes('fris') || name.includes('sinas') || name.includes('sprite') || name.includes('fanta')) return 'Fris';
+    if (name.includes('wijn') || name.includes('wine')) return 'Wijn';
+    if (name.includes('shot') || name.includes('likeur') || name.includes('sterke drank')) return 'Sterke drank';
+    return 'Overig';
+  };
+
+  // Calculate profit per category by matching sales to purchases
+  const categoryProfitAnalysis = Object.entries(salesStats || {}).reduce((acc: any, [drinkName, stats]: [string, any]) => {
+    const category = getCategoryForDrink(drinkName);
+    if (!acc[category]) {
+      acc[category] = {
+        totalSold: 0,
+        totalRevenue: 0,
+        drinks: [],
+      };
+    }
+    acc[category].totalSold += stats.quantity;
+    acc[category].totalRevenue += stats.totalRevenue;
+    acc[category].drinks.push({
+      name: drinkName,
+      quantity: stats.quantity,
+      revenue: stats.totalRevenue,
+    });
+    return acc;
+  }, {});
+
+  // Combine with purchase data to calculate actual profit margins
+  const profitByCategory = Object.keys(categoryProfitAnalysis).map((category) => {
+    const salesData = categoryProfitAnalysis[category];
+    const purchaseData = purchaseStats?.[category] || { quantity: 0, totalAmount: 0 };
+    
+    const totalCost = purchaseData.totalAmount;
+    const totalRevenue = salesData.totalRevenue;
+    const profit = totalRevenue - totalCost;
+    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+    
+    // Calculate expected vs actual sales ratio
+    const purchasedUnits = purchaseData.quantity;
+    const soldUnits = salesData.totalSold;
+    const salesRatio = purchasedUnits > 0 ? (soldUnits / purchasedUnits) * 100 : 0;
+    
+    return {
+      category,
+      totalCost,
+      totalRevenue,
+      profit,
+      profitMargin,
+      purchasedUnits,
+      soldUnits,
+      salesRatio,
+      avgCostPerUnit: purchasedUnits > 0 ? totalCost / purchasedUnits : 0,
+      avgRevenuePerUnit: soldUnits > 0 ? totalRevenue / soldUnits : 0,
+    };
+  });
+
+  // Calculate overall profit based on actual purchases vs sales
+  const totalActualCosts = profitByCategory.reduce((sum, cat) => sum + cat.totalCost, 0);
+  const totalActualRevenue = profitByCategory.reduce((sum, cat) => sum + cat.totalRevenue, 0);
+  const actualProfit = totalActualRevenue - totalActualCosts - totalExpenses;
+  const actualProfitMargin = totalActualRevenue > 0 ? (actualProfit / totalActualRevenue) * 100 : 0;
+
   // Total drinks sold
   const totalDrinksSold = transactions?.length || 0;
   const thisWeekDrinksSold = thisWeekTransactions?.length || 0;
@@ -234,15 +299,15 @@ const Statistics = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Geschatte Winst
+                Berekende Winst
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${estimatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{estimatedProfit.toFixed(2)}
+              <div className={`text-2xl font-bold ${actualProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{actualProfit.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                winstmarge: {profitMargin.toFixed(1)}%
+                winstmarge: {actualProfitMargin.toFixed(1)}%
               </p>
             </CardContent>
           </Card>
@@ -374,6 +439,72 @@ const Statistics = () => {
           </CardContent>
         </Card>
 
+        {/* Profit Analysis by Category */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Winstanalyse per Categorie</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profitByCategory.length > 0 ? (
+              <div className="space-y-4">
+                {profitByCategory.map((cat) => (
+                  <div key={cat.category} className="rounded-lg border bg-card p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-lg">{cat.category}</h3>
+                      <span className={`text-xl font-bold ${cat.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        €{cat.profit.toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded bg-muted p-2">
+                        <div className="text-muted-foreground">Ingekocht</div>
+                        <div className="font-semibold">{cat.purchasedUnits} stuks (€{cat.totalCost.toFixed(2)})</div>
+                        <div className="text-xs text-muted-foreground">Ø €{cat.avgCostPerUnit.toFixed(2)}/stuk</div>
+                      </div>
+                      
+                      <div className="rounded bg-muted p-2">
+                        <div className="text-muted-foreground">Verkocht</div>
+                        <div className="font-semibold">{cat.soldUnits} stuks (€{cat.totalRevenue.toFixed(2)})</div>
+                        <div className="text-xs text-muted-foreground">Ø €{cat.avgRevenuePerUnit.toFixed(2)}/stuk</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-sm font-medium">Winstmarge</span>
+                      <span className={`font-bold ${cat.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {cat.profitMargin.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    {cat.salesRatio > 100 && (
+                      <div className="rounded bg-yellow-100 dark:bg-yellow-900/20 p-2 text-sm">
+                        <span className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ Mogelijk niet alles gestreept:</span>
+                        <span className="text-yellow-700 dark:text-yellow-300 ml-1">
+                          {cat.soldUnits} verkocht vs {cat.purchasedUnits} ingekocht ({cat.salesRatio.toFixed(0)}%)
+                        </span>
+                      </div>
+                    )}
+                    
+                    {cat.salesRatio < 80 && cat.purchasedUnits > 0 && (
+                      <div className="rounded bg-blue-100 dark:bg-blue-900/20 p-2 text-sm">
+                        <span className="font-semibold text-blue-800 dark:text-blue-200">ℹ️ Lage verkoop ratio:</span>
+                        <span className="text-blue-700 dark:text-blue-300 ml-1">
+                          Slechts {cat.salesRatio.toFixed(0)}% verkocht van voorraad
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted p-8 text-center text-muted-foreground">
+                Nog geen data beschikbaar voor winstanalyse
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Financial Overview */}
         <Card>
           <CardHeader>
@@ -387,9 +518,9 @@ const Statistics = () => {
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-              <span className="font-medium">Totale inkopen</span>
+              <span className="font-medium">Totale inkopen (gelinkt aan verkopen)</span>
               <span className="text-lg font-bold text-red-600">
-                -€{totalPurchases.toFixed(2)}
+                -€{totalActualCosts.toFixed(2)}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
@@ -399,9 +530,9 @@ const Statistics = () => {
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg border-2 border-primary bg-card p-4">
-              <span className="text-lg font-bold">Netto Balans</span>
-              <span className={`text-2xl font-bold ${estimatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{estimatedProfit.toFixed(2)}
+              <span className="text-lg font-bold">Netto Winst</span>
+              <span className={`text-2xl font-bold ${actualProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{actualProfit.toFixed(2)}
               </span>
             </div>
           </CardContent>
