@@ -36,6 +36,7 @@ const Receipt = () => {
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const [pendingCreditAmount, setPendingCreditAmount] = useState<number | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const { data: members } = useQuery({
     queryKey: ["members-sorted"],
@@ -223,6 +224,7 @@ const Receipt = () => {
   };
 
   const weeklyData = getWeekTransactions();
+  const displayedWeeklyData = showAllHistory ? weeklyData : weeklyData.slice(0, 5);
   const todayGroupedDrinks = groupDrinksByName(transactions || []);
   const yearGroupedDrinks = groupDrinksByName(yearTransactions || []);
 
@@ -317,25 +319,36 @@ const Receipt = () => {
 
             <TabsContent value="history" className="space-y-4">
               {weeklyData.length > 0 ? (
-                weeklyData.map((week, index) => (
-                  <div key={index} className="rounded-lg border bg-card p-6">
-                    <h3 className="mb-3 text-lg font-semibold">
-                      Week van {week.weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}
-                    </h3>
-                    <div className="space-y-2">
-                      {week.groupedDrinks.map((drink) => (
-                        <div key={drink.name} className="flex justify-between text-sm">
-                          <span>{drink.count}x {drink.name}</span>
-                          <span>€{drink.total.toFixed(2)}</span>
-                        </div>
-                      ))}
+                <>
+                  {displayedWeeklyData.map((week, index) => (
+                    <div key={index} className="rounded-lg border bg-card p-6">
+                      <h3 className="mb-3 text-lg font-semibold">
+                        Week van {week.weekStart.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}
+                      </h3>
+                      <div className="space-y-2">
+                        {week.groupedDrinks.map((drink) => (
+                          <div key={drink.name} className="flex justify-between text-sm">
+                            <span>{drink.count}x {drink.name}</span>
+                            <span>€{drink.total.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 border-t pt-2 flex justify-between font-semibold">
+                        <span>Totaal week:</span>
+                        <span>€{week.total.toFixed(2)}</span>
+                      </div>
                     </div>
-                    <div className="mt-3 border-t pt-2 flex justify-between font-semibold">
-                      <span>Totaal week:</span>
-                      <span>€{week.total.toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                  {weeklyData.length > 5 && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowAllHistory(!showAllHistory)}
+                    >
+                      {showAllHistory ? 'Toon minder' : `Toon alle ${weeklyData.length} weken`}
+                    </Button>
+                  )}
+                </>
               ) : (
                 <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
                   Geen eerdere transacties

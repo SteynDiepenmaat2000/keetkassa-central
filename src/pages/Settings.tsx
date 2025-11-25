@@ -43,6 +43,8 @@ const Settings = () => {
   const [selectedExpenseMember, setSelectedExpenseMember] = useState<string | null>(null);
   const [memberToDeactivate, setMemberToDeactivate] = useState<string | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [showAllSettledPurchases, setShowAllSettledPurchases] = useState(false);
+  const [showAllSettledExpenses, setShowAllSettledExpenses] = useState(false);
   
   // Purchase form state
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -738,6 +740,7 @@ const Settings = () => {
             <h3 className="font-semibold">Verrekende inkopen</h3>
             {purchases
               ?.filter((p: any) => p.settled)
+              .slice(0, showAllSettledPurchases ? undefined : 5)
               .map((purchase: any) => (
                 <div key={purchase.id} className="rounded-lg border bg-muted p-3 opacity-60">
                   <div className="flex items-start justify-between">
@@ -750,10 +753,28 @@ const Settings = () => {
                         <div className="text-sm text-muted-foreground">{purchase.description}</div>
                       )}
                     </div>
-                    <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold">€{Number(purchase.total_amount).toFixed(2)}</div>
+                      {purchase.payment_method && (
+                        <div className="text-xs text-muted-foreground">
+                          {purchase.payment_method === "credit" ? "Via credit" : "Uitbetaald"}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
+            {purchases?.filter((p: any) => p.settled).length > 5 && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAllSettledPurchases(!showAllSettledPurchases)}
+              >
+                {showAllSettledPurchases 
+                  ? 'Toon minder' 
+                  : `Toon alle ${purchases?.filter((p: any) => p.settled).length} verrekende inkopen`}
+              </Button>
+            )}
           </div>
         </TabsContent>
 
@@ -861,6 +882,7 @@ const Settings = () => {
             <h3 className="font-semibold">Verrekende kosten</h3>
             {expenses
               ?.filter((e) => e.settled)
+              .slice(0, showAllSettledExpenses ? undefined : 5)
               .map((expense: any) => (
                 <div key={expense.id} className="rounded-lg border bg-muted p-3 opacity-60">
                   <div className="flex items-start justify-between">
@@ -877,6 +899,17 @@ const Settings = () => {
                   </div>
                 </div>
               ))}
+            {expenses?.filter((e) => e.settled).length > 5 && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAllSettledExpenses(!showAllSettledExpenses)}
+              >
+                {showAllSettledExpenses 
+                  ? 'Toon minder' 
+                  : `Toon alle ${expenses?.filter((e) => e.settled).length} verrekende kosten`}
+              </Button>
+            )}
           </div>
         </TabsContent>
 

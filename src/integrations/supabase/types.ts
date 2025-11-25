@@ -105,6 +105,7 @@ export type Database = {
           description: string | null
           id: string
           member_id: string | null
+          payment_method: string | null
           price_per_unit: number
           quantity: number
           settled: boolean
@@ -117,6 +118,7 @@ export type Database = {
           description?: string | null
           id?: string
           member_id?: string | null
+          payment_method?: string | null
           price_per_unit: number
           quantity: number
           settled?: boolean
@@ -129,6 +131,7 @@ export type Database = {
           description?: string | null
           id?: string
           member_id?: string | null
+          payment_method?: string | null
           price_per_unit?: number
           quantity?: number
           settled?: boolean
