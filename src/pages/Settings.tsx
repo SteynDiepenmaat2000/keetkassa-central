@@ -37,6 +37,7 @@ const Settings = () => {
   const [newMemberName, setNewMemberName] = useState("");
   const [newDrinkName, setNewDrinkName] = useState("");
   const [newDrinkPrice, setNewDrinkPrice] = useState("");
+  const [newDrinkVolume, setNewDrinkVolume] = useState("");
   const [editingDrink, setEditingDrink] = useState<any>(null);
   const [newExpenseDescription, setNewExpenseDescription] = useState("");
   const [newExpenseAmount, setNewExpenseAmount] = useState("");
@@ -205,15 +206,24 @@ const Settings = () => {
       if (isNaN(price) || price <= 0) {
         throw new Error("Prijs moet een geldig positief getal zijn");
       }
+      const volumeMl = newDrinkVolume ? parseInt(newDrinkVolume) : null;
+      if (newDrinkVolume && (isNaN(volumeMl!) || volumeMl! <= 0)) {
+        throw new Error("Volume moet een geldig positief getal zijn");
+      }
       const { error } = await supabase
         .from("drinks")
-        .insert({ name: newDrinkName.trim(), price });
+        .insert({ 
+          name: newDrinkName.trim(), 
+          price,
+          volume_ml: volumeMl
+        });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drinks"] });
       setNewDrinkName("");
       setNewDrinkPrice("");
+      setNewDrinkVolume("");
       toast.success("Drankje toegevoegd!");
     },
     onError: (error: any) => toast.error(error.message || "Er ging iets mis"),
@@ -601,28 +611,46 @@ const Settings = () => {
               <TabsContent value="drinks" className="space-y-4">
                 <div className="rounded-lg border bg-card p-4">
                   <h3 className="mb-3 font-semibold">Nieuw drankje toevoegen</h3>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Naam"
-                      value={newDrinkName}
-                      onChange={(e) => setNewDrinkName(e.target.value)}
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Prijs"
-                      value={newDrinkPrice}
-                      onChange={(e) => setNewDrinkPrice(e.target.value)}
-                      className="w-32"
-                    />
-                    <Button onClick={() => addDrink.mutate()}>Toevoegen</Button>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Naam (bijv. Cola Klein)"
+                        value={newDrinkName}
+                        onChange={(e) => setNewDrinkName(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="ML"
+                        value={newDrinkVolume}
+                        onChange={(e) => setNewDrinkVolume(e.target.value)}
+                        className="w-24"
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Prijs"
+                        value={newDrinkPrice}
+                        onChange={(e) => setNewDrinkPrice(e.target.value)}
+                        className="w-28"
+                      />
+                      <Button onClick={() => addDrink.mutate()}>Toevoegen</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tip: Voor frisdrank gebruik bijv. "Cola Klein" (330ml) en "Cola Groot" (500ml) als aparte drankjes
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   {drinks?.map((drink) => (
                     <div key={drink.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
-                      <span>{drink.name}</span>
+                      <div className="flex flex-col">
+                        <span>{drink.name}</span>
+                        {drink.volume_ml && (
+                          <span className="text-xs text-muted-foreground">{drink.volume_ml}ml</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         {editingDrink?.id === drink.id ? (
                           <>

@@ -29,7 +29,7 @@ const Statistics = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("*, drinks(name, price), members(name)");
+        .select("*, drinks(name, price, volume_ml), members(name)");
       if (error) throw error;
       return data;
     },
@@ -73,7 +73,7 @@ const Statistics = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("drinks")
-        .select("*");
+        .select("id, name, price, volume_ml");
       if (error) throw error;
       return data;
     },
@@ -214,12 +214,10 @@ const Statistics = () => {
     return 'Bier'; // Default to Bier for unknown drinks
   };
 
-  // Determine glass size based on drink name (for Frisdrank and Wijn)
-  const getGlassSize = (drinkName: string): number => {
-    const name = drinkName.toLowerCase();
-    // Klein glas = 0.3L, Groot glas = 0.5L
-    if (name.includes('klein') || name.includes('small')) return 0.3;
-    return 0.5; // Default to groot glas
+  // Get drink volume from drinks data (used for cost calculations)
+  const getDrinkVolume = (drinkName: string): number | null => {
+    const drink = drinks?.find(d => d.name === drinkName);
+    return drink?.volume_ml ? drink.volume_ml / 1000 : null; // Convert ml to liters
   };
 
   // Calculate learned average cost per liter for drinks with bottle sizes (Frisdrank, Wijn)
@@ -263,10 +261,15 @@ const Statistics = () => {
     
     let learnedCostPerUnit = 0;
     
-    // For Frisdrank and Wijn, calculate cost per glass based on bottle size data
+    // For Frisdrank and Wijn, calculate cost per glass based on actual drink volume_ml
     if ((category === 'Frisdrank' || category === 'Wijn') && learnedCostPerLiter[category]) {
-      const glassSize = getGlassSize(drinkName);
-      learnedCostPerUnit = learnedCostPerLiter[category] * glassSize;
+      const volumeLiters = getDrinkVolume(drinkName);
+      if (volumeLiters) {
+        learnedCostPerUnit = learnedCostPerLiter[category] * volumeLiters;
+      } else {
+        // Fallback to average if no volume specified
+        learnedCostPerUnit = learnedCategoryAverages[category] || 0;
+      }
     } else {
       // For other categories, use the average cost per unit
       learnedCostPerUnit = learnedCategoryAverages[category] || 0;

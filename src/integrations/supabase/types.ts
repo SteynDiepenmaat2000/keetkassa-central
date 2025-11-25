@@ -49,18 +49,21 @@ export type Database = {
           id: string
           name: string
           price: number
+          volume_ml: number | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           price: number
+          volume_ml?: number | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           price?: number
+          volume_ml?: number | null
         }
         Relationships: []
       }
