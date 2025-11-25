@@ -36,6 +36,7 @@ const Settings = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
   const [newDrinkName, setNewDrinkName] = useState("");
+  const [newDrinkVariant, setNewDrinkVariant] = useState("");
   const [newDrinkPrice, setNewDrinkPrice] = useState("");
   const [newDrinkVolume, setNewDrinkVolume] = useState("");
   const [editingDrink, setEditingDrink] = useState<any>(null);
@@ -210,10 +211,16 @@ const Settings = () => {
       if (newDrinkVolume && (isNaN(volumeMl!) || volumeMl! <= 0)) {
         throw new Error("Volume moet een geldig positief getal zijn");
       }
+      
+      // Combine name and variant for full drink name
+      const fullName = newDrinkVariant.trim() 
+        ? `${newDrinkName.trim()} ${newDrinkVariant.trim()}`
+        : newDrinkName.trim();
+      
       const { error } = await supabase
         .from("drinks")
         .insert({ 
-          name: newDrinkName.trim(), 
+          name: fullName, 
           price,
           volume_ml: volumeMl
         });
@@ -222,6 +229,7 @@ const Settings = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["drinks"] });
       setNewDrinkName("");
+      setNewDrinkVariant("");
       setNewDrinkPrice("");
       setNewDrinkVolume("");
       toast.success("Drankje toegevoegd!");
@@ -612,32 +620,36 @@ const Settings = () => {
                 <div className="rounded-lg border bg-card p-4">
                   <h3 className="mb-3 font-semibold">Nieuw drankje toevoegen</h3>
                   <div className="flex flex-col gap-3">
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <Input
-                        placeholder="Naam (bijv. Cola Klein)"
+                        placeholder="Naam (bijv. Coca Cola)"
                         value={newDrinkName}
                         onChange={(e) => setNewDrinkName(e.target.value)}
-                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="Variant (bijv. Groot, Klein)"
+                        value={newDrinkVariant}
+                        onChange={(e) => setNewDrinkVariant(e.target.value)}
                       />
                       <Input
                         type="number"
-                        placeholder="ML"
+                        placeholder="Volume (ml)"
                         value={newDrinkVolume}
                         onChange={(e) => setNewDrinkVolume(e.target.value)}
-                        className="w-24"
                       />
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="Prijs"
+                        placeholder="Prijs (€)"
                         value={newDrinkPrice}
                         onChange={(e) => setNewDrinkPrice(e.target.value)}
-                        className="w-28"
                       />
-                      <Button onClick={() => addDrink.mutate()}>Toevoegen</Button>
                     </div>
+                    <Button onClick={() => addDrink.mutate()} className="w-full md:w-auto">
+                      Toevoegen
+                    </Button>
                     <p className="text-xs text-muted-foreground">
-                      Tip: Voor frisdrank gebruik bijv. "Cola Klein" (330ml) en "Cola Groot" (500ml) als aparte drankjes
+                      Voorbeeld: Coca Cola - Groot - 500ml - €1,50 | Coca Cola - Klein - 330ml - €1,25
                     </p>
                   </div>
                 </div>
