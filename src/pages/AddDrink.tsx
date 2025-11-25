@@ -1,59 +1,33 @@
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { db } from "@/lib/database";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useEffect } from "react";
 
 const AddDrink = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('add-drink-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const { data: members } = useQuery({
     queryKey: ["members-sorted"],
     queryFn: async () => {
-      // Get all active members with their latest transaction
-      const { data: membersData, error: membersError } = await supabase
-        .from("members")
-        .select("*")
-        .eq("active", true);
-      
-      if (membersError) throw membersError;
+      const [membersData, transactions] = await Promise.all([
+        db.getMembers(true),
+        db.getTransactions(1000),
+      ]);
 
-      // Get latest transaction for each member
-      const membersWithLastTransaction = await Promise.all(
-        membersData.map(async (member) => {
-          const { data: lastTransaction } = await supabase
-            .from("transactions")
-            .select("created_at")
-            .eq("member_id", member.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+      // Get last transaction for each member
+      const memberLastTransaction = new Map<string, string>();
+      transactions.forEach((t) => {
+        if (!memberLastTransaction.has(t.member_id)) {
+          memberLastTransaction.set(t.member_id, t.created_at);
+        }
+      });
 
-          return {
-            ...member,
-            last_transaction: lastTransaction?.created_at || null,
-          };
-        })
-      );
+      // Add last transaction to members
+      const membersWithLastTransaction = membersData.map((member) => ({
+        ...member,
+        last_transaction: memberLastTransaction.get(member.id) || null,
+      }));
 
       // Sort by last transaction (most recent first), then by name
       return membersWithLastTransaction.sort((a, b) => {
@@ -63,6 +37,7 @@ const AddDrink = () => {
         return new Date(b.last_transaction).getTime() - new Date(a.last_transaction).getTime();
       });
     },
+    refetchInterval: 5000, // Poll for updates
   });
 
   return (

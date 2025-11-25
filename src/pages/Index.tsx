@@ -1,30 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Settings, Trophy, Info } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { db } from "@/lib/database";
 
 const Index = () => {
-  const queryClient = useQueryClient();
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('index-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        queryClient.invalidateQueries({ queryKey: ["top-drinkers"] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
   const currentTime = new Date().toLocaleTimeString("nl-NL", {
     hour: "2-digit",
     minute: "2-digit",
@@ -43,35 +23,42 @@ const Index = () => {
       drinkCount: number;
       totalSpent: number;
     }>> => {
-      const yearStart = new Date(new Date().getFullYear(), 0, 1);
+      const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
 
-      // Fetch all transactions in one query for better performance
-      const { data: transactions, error: transError } = await supabase
-        .from("transactions")
-        .select("member_id, price, members!inner(id, name, active)")
-        .gte("created_at", yearStart.toISOString())
-        .eq("members.active", true);
+      // Fetch transactions and members
+      const [transactions, members] = await Promise.all([
+        db.getTransactions(10000),
+        db.getMembers(true), // active only
+      ]);
 
-      if (transError) throw transError;
+      // Filter transactions for current year
+      const yearTransactions = transactions.filter(
+        (t) => t.created_at >= yearStart
+      );
+
+      // Create member lookup
+      const memberMap = new Map(members.map((m) => [m.id, m]));
 
       // Group transactions by member
-      const memberStats = (transactions || []).reduce((acc: Record<string, {
+      const memberStats = yearTransactions.reduce((acc: Record<string, {
         id: string;
         name: string;
         drinkCount: number;
         totalSpent: number;
-      }>, t: any) => {
-        const memberId = t.member_id;
-        if (!acc[memberId]) {
-          acc[memberId] = {
-            id: memberId,
-            name: t.members.name,
+      }>, t) => {
+        const member = memberMap.get(t.member_id);
+        if (!member) return acc;
+
+        if (!acc[t.member_id]) {
+          acc[t.member_id] = {
+            id: t.member_id,
+            name: member.name,
             drinkCount: 0,
             totalSpent: 0,
           };
         }
-        acc[memberId].drinkCount += 1;
-        acc[memberId].totalSpent += Number(t.price);
+        acc[t.member_id].drinkCount += 1;
+        acc[t.member_id].totalSpent += Number(t.price);
         return acc;
       }, {});
 
@@ -79,6 +66,7 @@ const Index = () => {
         .sort((a, b) => b.drinkCount - a.drinkCount)
         .slice(0, 3);
     },
+    refetchInterval: 5000, // Poll every 5 seconds for updates
   });
 
   return (
@@ -124,7 +112,6 @@ const Index = () => {
             Kassabon
           </Button>
         </Link>
-
 
         {topDrinkers && topDrinkers.length > 0 && (
           <div className="mt-16 animate-fade-in">
