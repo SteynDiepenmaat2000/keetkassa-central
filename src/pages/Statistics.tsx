@@ -195,6 +195,40 @@ const Statistics = () => {
     return 'Overig';
   };
 
+  // Calculate learned average cost per unit for each category from historical purchases
+  const learnedCategoryAverages = Object.entries(purchaseStats || {}).reduce((acc: any, [category, stats]: [string, any]) => {
+    acc[category] = stats.quantity > 0 ? stats.totalAmount / stats.quantity : 0;
+    return acc;
+  }, {});
+
+  // Enhanced sales statistics with learned cost estimation per drink
+  const enhancedSalesStats = Object.entries(salesStats || {}).map(([drinkName, stats]: [string, any]) => {
+    const category = getCategoryForDrink(drinkName);
+    const learnedCostPerUnit = learnedCategoryAverages[category] || 0;
+    const estimatedTotalCost = stats.quantity * learnedCostPerUnit;
+    const estimatedProfit = stats.totalRevenue - estimatedTotalCost;
+    const estimatedMargin = stats.totalRevenue > 0 ? (estimatedProfit / stats.totalRevenue) * 100 : 0;
+    
+    return {
+      drinkName,
+      category,
+      quantity: stats.quantity,
+      totalRevenue: stats.totalRevenue,
+      avgRevenuePerUnit: stats.totalRevenue / stats.quantity,
+      learnedCostPerUnit,
+      estimatedTotalCost,
+      estimatedProfit,
+      estimatedMargin,
+      weekCount: stats.weekCount,
+      monthCount: stats.monthCount,
+    };
+  });
+
+  // Calculate total learned profit (sum of all individual drink profits)
+  const totalLearnedProfit = enhancedSalesStats.reduce((sum, drink) => sum + drink.estimatedProfit, 0) - totalExpenses;
+  const totalLearnedCosts = enhancedSalesStats.reduce((sum, drink) => sum + drink.estimatedTotalCost, 0);
+  const learnedProfitMargin = totalRevenue > 0 ? (totalLearnedProfit / totalRevenue) * 100 : 0;
+
   // Calculate profit per category by matching sales to purchases
   const categoryProfitAnalysis = Object.entries(salesStats || {}).reduce((acc: any, [drinkName, stats]: [string, any]) => {
     const category = getCategoryForDrink(drinkName);
@@ -299,15 +333,15 @@ const Statistics = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Berekende Winst
+                Geleerde Winst
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${actualProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{actualProfit.toFixed(2)}
+              <div className={`text-2xl font-bold ${totalLearnedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{totalLearnedProfit.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                winstmarge: {actualProfitMargin.toFixed(1)}%
+                marge: {learnedProfitMargin.toFixed(1)}% (op basis van historische data)
               </p>
             </CardContent>
           </Card>
@@ -439,10 +473,97 @@ const Statistics = () => {
           </CardContent>
         </Card>
 
+        {/* Learned Profit Analysis per Drink */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Geleerde Winstanalyse per Drankje</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gebaseerd op historische inkoop- en verkoopdata per categorie
+            </p>
+          </CardHeader>
+          <CardContent>
+            {enhancedSalesStats.length > 0 ? (
+              <div className="space-y-2">
+                {enhancedSalesStats
+                  .sort((a, b) => b.estimatedProfit - a.estimatedProfit)
+                  .map((drink) => (
+                    <div key={drink.drinkName} className="rounded-lg border bg-card p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="font-semibold">{drink.drinkName}</div>
+                          <div className="text-xs text-muted-foreground">{drink.category}</div>
+                        </div>
+                        <div className={`text-lg font-bold ${drink.estimatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          €{drink.estimatedProfit.toFixed(2)}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded bg-muted p-2">
+                          <div className="text-muted-foreground">Verkocht</div>
+                          <div className="font-semibold">{drink.quantity}x</div>
+                        </div>
+                        <div className="rounded bg-muted p-2">
+                          <div className="text-muted-foreground">Inkoopprijs</div>
+                          <div className="font-semibold">€{drink.learnedCostPerUnit.toFixed(2)}</div>
+                        </div>
+                        <div className="rounded bg-muted p-2">
+                          <div className="text-muted-foreground">Verkoopprijs</div>
+                          <div className="font-semibold">€{drink.avgRevenuePerUnit.toFixed(2)}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t text-xs">
+                        <span>Marge per stuk: €{((drink.avgRevenuePerUnit - drink.learnedCostPerUnit)).toFixed(2)}</span>
+                        <span className={`font-bold ${drink.estimatedMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {drink.estimatedMargin.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted p-8 text-center text-muted-foreground">
+                Nog geen verkoopdata beschikbaar
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Category Averages Learned */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Geleerde Gemiddelden per Categorie</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Deze gemiddelde inkoopprijzen worden gebruikt voor winstberekening
+            </p>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(learnedCategoryAverages).length > 0 ? (
+              <div className="grid gap-2 md:grid-cols-2">
+                {Object.entries(learnedCategoryAverages).map(([category, avgCost]: [string, any]) => (
+                  <div key={category} className="rounded-lg border bg-card p-3">
+                    <div className="font-semibold">{category}</div>
+                    <div className="text-2xl font-bold text-primary">€{avgCost.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">gemiddelde inkoopprijs per stuk</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted p-8 text-center text-muted-foreground">
+                Nog geen inkoopdata om van te leren
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Profit Analysis by Category */}
         <Card>
           <CardHeader>
-            <CardTitle>Winstanalyse per Categorie</CardTitle>
+            <CardTitle>Directe Koppeling: Inkopen vs Verkopen</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vergelijking tussen wat daadwerkelijk is ingekocht en verkocht
+            </p>
           </CardHeader>
           <CardContent>
             {profitByCategory.length > 0 ? (
@@ -499,7 +620,7 @@ const Statistics = () => {
               </div>
             ) : (
               <div className="rounded-lg border bg-muted p-8 text-center text-muted-foreground">
-                Nog geen data beschikbaar voor winstanalyse
+                Nog geen data beschikbaar voor directe koppeling
               </div>
             )}
           </CardContent>
@@ -508,7 +629,10 @@ const Statistics = () => {
         {/* Financial Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Financieel Overzicht</CardTitle>
+            <CardTitle>Financieel Overzicht (Geleerd Model)</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Berekend op basis van historische inkoop gemiddelden
+            </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
@@ -518,9 +642,9 @@ const Statistics = () => {
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-              <span className="font-medium">Totale inkopen (gelinkt aan verkopen)</span>
+              <span className="font-medium">Geschatte kosten (o.b.v. geleerde prijzen)</span>
               <span className="text-lg font-bold text-red-600">
-                -€{totalActualCosts.toFixed(2)}
+                -€{totalLearnedCosts.toFixed(2)}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted p-3">
@@ -530,10 +654,13 @@ const Statistics = () => {
               </span>
             </div>
             <div className="flex items-center justify-between rounded-lg border-2 border-primary bg-card p-4">
-              <span className="text-lg font-bold">Netto Winst</span>
-              <span className={`text-2xl font-bold ${actualProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                €{actualProfit.toFixed(2)}
+              <span className="text-lg font-bold">Geleerde Netto Winst</span>
+              <span className={`text-2xl font-bold ${totalLearnedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{totalLearnedProfit.toFixed(2)}
               </span>
+            </div>
+            <div className="text-xs text-muted-foreground text-center pt-2">
+              💡 Dit model wordt nauwkeuriger naarmate er meer inkoop- en verkoopdata beschikbaar is
             </div>
           </CardContent>
         </Card>
