@@ -195,9 +195,6 @@ const AddDrinkSelectDrink = () => {
                   {groupDrinks.length} opties
                 </span>
               )}
-              <span className="text-base opacity-90 sm:text-lg">
-                vanaf €{Math.min(...groupDrinks.map(d => Number(d.price))).toFixed(2)}
-              </span>
             </Button>
           );
         })}
@@ -224,7 +221,7 @@ const AddDrinkSelectDrink = () => {
                   <span className="text-lg font-bold">€{Number(drink.price).toFixed(2)}</span>
                 </div>
                 {drink.volume_ml && (
-                  <span className="text-sm text-muted-foreground">{drink.volume_ml}ml</span>
+                  <span className="text-xl font-semibold text-foreground">{drink.volume_ml}ml</span>
                 )}
               </Button>
             ))}
