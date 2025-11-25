@@ -210,7 +210,7 @@ export type Database = {
     }
     Functions: {
       delete_inactive_members_from_previous_year: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: undefined
       }
     }
