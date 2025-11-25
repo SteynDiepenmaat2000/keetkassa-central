@@ -28,6 +28,7 @@ const Receipt = () => {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'credit_transactions' }, () => {
         queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
       })
       .subscribe();
 
@@ -185,6 +186,7 @@ const Receipt = () => {
     },
     onSuccess: (amount) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
       queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       toast.success(`€${amount} toegevoegd aan je credit!`, {
         description: "Vergeet niet het contante geld aan Luc te geven!",
