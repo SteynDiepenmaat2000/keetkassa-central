@@ -204,13 +204,14 @@ const Statistics = () => {
   }, {});
 
   // Map drink names to categories (case insensitive matching)
+  // Must match the purchase categories: "Bier", "Frisdrank", "Wijn", "Chips/Voedsel", "Gasflessen", "Algemene omkosten"
   const getCategoryForDrink = (drinkName: string): string => {
     const name = drinkName.toLowerCase();
     if (name.includes('bier') || name.includes('beer')) return 'Bier';
-    if (name.includes('cola') || name.includes('fris') || name.includes('sinas') || name.includes('sprite') || name.includes('fanta')) return 'Fris';
+    if (name.includes('cola') || name.includes('fris') || name.includes('sinas') || name.includes('sprite') || name.includes('fanta') || name.includes('soda')) return 'Frisdrank';
     if (name.includes('wijn') || name.includes('wine')) return 'Wijn';
-    if (name.includes('shot') || name.includes('likeur') || name.includes('sterke drank')) return 'Sterke drank';
-    return 'Overig';
+    if (name.includes('chips') || name.includes('eten') || name.includes('food')) return 'Chips/Voedsel';
+    return 'Bier'; // Default to Bier for unknown drinks
   };
 
   // Calculate learned average cost per unit for each category from historical purchases (excluding deposit)
