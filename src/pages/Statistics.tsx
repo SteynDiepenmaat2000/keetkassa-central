@@ -696,11 +696,11 @@ const Statistics = () => {
                     <div>
                       <div className="font-semibold">{category}</div>
                       <div className="text-sm text-muted-foreground">
-                        {stats.quantity} stuks
+                        {stats.totalUnits} stuks
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">€{stats.totalAmount.toFixed(2)}</div>
+                      <div className="font-bold">€{stats.totalCostExcludingDeposit.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
