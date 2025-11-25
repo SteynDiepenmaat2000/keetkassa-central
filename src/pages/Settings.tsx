@@ -398,6 +398,14 @@ const Settings = () => {
       
       if (transactionsError) throw transactionsError;
 
+      // Delete all credit transactions
+      const { error: creditTransactionsError } = await supabase
+        .from("credit_transactions")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      if (creditTransactionsError) throw creditTransactionsError;
+
       // Delete all purchases
       const { error: purchasesError } = await supabase
         .from("purchases")
@@ -424,7 +432,7 @@ const Settings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries();
-      toast.success("Database gewist - alle transacties, inkopen en kosten zijn verwijderd");
+      toast.success("Database gewist - alle transacties, credit opwaarderingen, inkopen en kosten zijn verwijderd");
       setShowResetDialog(false);
       setResetStep(1);
       setUserVerificationInput("");

@@ -21,9 +21,13 @@ const Receipt = () => {
         queryClient.invalidateQueries({ queryKey: ["transactions"] });
         queryClient.invalidateQueries({ queryKey: ["all-transactions"] });
         queryClient.invalidateQueries({ queryKey: ["year-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
         queryClient.invalidateQueries({ queryKey: ["members-sorted"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'credit_transactions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       })
       .subscribe();
 
@@ -133,22 +137,55 @@ const Receipt = () => {
     },
   });
 
+  const { data: creditTransactions } = useQuery({
+    queryKey: ["credit-transactions", selectedMember],
+    enabled: !!selectedMember,
+    queryFn: async () => {
+      if (!selectedMember) return [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from("credit_transactions")
+        .select("*")
+        .eq("member_id", selectedMember)
+        .gte("created_at", today.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const addCredit = useMutation({
     mutationFn: async (amount: number) => {
       if (!selectedMember) return;
       const member = members?.find((m) => m.id === selectedMember);
       if (!member) return;
 
-      const { error } = await supabase
+      // Update member credit
+      const { error: memberError } = await supabase
         .from("members")
         .update({ credit: Number(member.credit) + amount })
         .eq("id", member.id);
 
-      if (error) throw error;
+      if (memberError) throw memberError;
+
+      // Log the credit transaction
+      const { error: creditError } = await supabase
+        .from("credit_transactions")
+        .insert({
+          member_id: member.id,
+          amount: amount,
+        });
+
+      if (creditError) throw creditError;
+
       return amount;
     },
     onSuccess: (amount) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       toast.success(`€${amount} toegevoegd aan je credit!`, {
         description: "Vergeet niet het contante geld aan Luc te geven!",
         duration: 5000,
@@ -176,6 +213,7 @@ const Receipt = () => {
 
   const member = members?.find((m) => m.id === selectedMember);
   const todayTotal = transactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
+  const todayCreditTotal = creditTransactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
   const previousTotal = allTransactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
   const yearTotal = yearTransactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
 
@@ -294,25 +332,63 @@ const Receipt = () => {
             </TabsList>
 
             <TabsContent value="today" className="space-y-4">
-              {todayGroupedDrinks.length > 0 ? (
-                <div className="rounded-lg border bg-card p-6">
-                  <h3 className="mb-3 text-lg font-semibold">Drankjes vandaag:</h3>
-                  <div className="space-y-2">
-                    {todayGroupedDrinks.map((drink) => (
-                      <div key={drink.name} className="flex justify-between text-sm">
-                        <span>{drink.count}x {drink.name}</span>
-                        <span>€{drink.total.toFixed(2)}</span>
+              {todayGroupedDrinks.length > 0 || (creditTransactions && creditTransactions.length > 0) ? (
+                <div className="space-y-4">
+                  {todayGroupedDrinks.length > 0 && (
+                    <div className="rounded-lg border bg-card p-6">
+                      <h3 className="mb-3 text-lg font-semibold">Drankjes vandaag:</h3>
+                      <div className="space-y-2">
+                        {todayGroupedDrinks.map((drink) => (
+                          <div key={drink.name} className="flex justify-between text-sm">
+                            <span>{drink.count}x {drink.name}</span>
+                            <span className="text-destructive">-€{drink.total.toFixed(2)}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 border-t pt-3 flex justify-between font-bold">
-                    <span>Totaal:</span>
-                    <span>€{todayTotal.toFixed(2)}</span>
+                      <div className="mt-4 border-t pt-3 flex justify-between font-bold">
+                        <span>Totaal drankjes:</span>
+                        <span className="text-destructive">-€{todayTotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {creditTransactions && creditTransactions.length > 0 && (
+                    <div className="rounded-lg border bg-card p-6">
+                      <h3 className="mb-3 text-lg font-semibold">Credit opwaarderingen vandaag:</h3>
+                      <div className="space-y-2">
+                        {creditTransactions.map((credit) => (
+                          <div key={credit.id} className="flex justify-between text-sm">
+                            <span>
+                              Credit toegevoegd om {new Date(credit.created_at).toLocaleTimeString('nl-NL', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                            <span className="text-success">+€{Number(credit.amount).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 border-t pt-3 flex justify-between font-bold">
+                        <span>Totaal credit:</span>
+                        <span className="text-success">+€{todayCreditTotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rounded-lg border-2 border-primary bg-primary/5 p-6">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold">Netto vandaag:</span>
+                      <span className={`text-xl font-bold ${
+                        (todayCreditTotal - todayTotal) >= 0 ? 'text-success' : 'text-destructive'
+                      }`}>
+                        {todayCreditTotal - todayTotal >= 0 ? '+' : ''}€{(todayCreditTotal - todayTotal).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
-                  Nog geen drankjes vandaag
+                  Nog geen activiteit vandaag
                 </div>
               )}
             </TabsContent>
