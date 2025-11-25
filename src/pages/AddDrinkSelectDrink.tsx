@@ -21,7 +21,9 @@ const AddDrinkSelectDrink = () => {
   const { memberId } = useParams();
   const queryClient = useQueryClient();
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
+  const [showSizeDialog, setShowSizeDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<"groot" | "klein" | null>(null);
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -65,24 +67,41 @@ const AddDrinkSelectDrink = () => {
     },
   });
 
+  const isFrisdrank = (drinkName: string) => {
+    const frisdrankKeywords = ["cola", "sinas", "7up", "fanta", "sprite", "cassis", "fris"];
+    return frisdrankKeywords.some(keyword => drinkName.toLowerCase().includes(keyword));
+  };
+
+  const getFinalPrice = (drink: any) => {
+    if (!drink) return 0;
+    const basePrice = Number(drink.price);
+    // If it's frisdrank and klein is selected, price is 60% (0.3L / 0.5L)
+    if (isFrisdrank(drink.name) && selectedSize === "klein") {
+      return basePrice * 0.6;
+    }
+    return basePrice;
+  };
+
   const addTransaction = useMutation({
     mutationFn: async (drinkId: string) => {
       const drink = drinks?.find((d) => d.id === drinkId);
       if (!member || !drink) return;
+
+      const finalPrice = getFinalPrice(drink);
 
       const { error: transactionError } = await supabase
         .from("transactions")
         .insert({
           member_id: member.id,
           drink_id: drink.id,
-          price: drink.price,
+          price: finalPrice,
         });
 
       if (transactionError) throw transactionError;
 
       const { error: updateError } = await supabase
         .from("members")
-        .update({ credit: Number(member.credit) - Number(drink.price) })
+        .update({ credit: Number(member.credit) - finalPrice })
         .eq("id", member.id);
 
       if (updateError) throw updateError;
@@ -99,7 +118,20 @@ const AddDrinkSelectDrink = () => {
   });
 
   const handleDrinkSelect = (drinkId: string) => {
+    const drink = drinks?.find((d) => d.id === drinkId);
     setSelectedDrink(drinkId);
+    
+    if (drink && isFrisdrank(drink.name)) {
+      setShowSizeDialog(true);
+    } else {
+      setSelectedSize(null);
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleSizeSelect = (size: "groot" | "klein") => {
+    setSelectedSize(size);
+    setShowSizeDialog(false);
     setShowConfirmDialog(true);
   };
 
@@ -109,6 +141,14 @@ const AddDrinkSelectDrink = () => {
     }
     setShowConfirmDialog(false);
     setSelectedDrink(null);
+    setSelectedSize(null);
+  };
+
+  const handleCancel = () => {
+    setShowConfirmDialog(false);
+    setShowSizeDialog(false);
+    setSelectedDrink(null);
+    setSelectedSize(null);
   };
 
   const selectedDrinkData = drinks?.find((d) => d.id === selectedDrink);
@@ -146,18 +186,48 @@ const AddDrinkSelectDrink = () => {
         ))}
       </div>
 
+      <AlertDialog open={showSizeDialog} onOpenChange={setShowSizeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kies formaat</AlertDialogTitle>
+            <AlertDialogDescription>
+              Wil je een <strong>groot</strong> (0,5L) of <strong>klein</strong> (0,3L) glas?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel onClick={handleCancel}>
+              Annuleren
+            </AlertDialogCancel>
+            <Button 
+              onClick={() => handleSizeSelect("klein")} 
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Klein (0,3L)
+            </Button>
+            <AlertDialogAction 
+              onClick={() => handleSizeSelect("groot")}
+              className="w-full sm:w-auto"
+            >
+              Groot (0,5L)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Drankje bevestigen</AlertDialogTitle>
             <AlertDialogDescription>
-              Weet je zeker dat je <strong>{selectedDrinkData?.name}</strong> (€
-              {selectedDrinkData ? Number(selectedDrinkData.price).toFixed(2) : "0.00"})
+              Weet je zeker dat je <strong>{selectedDrinkData?.name}</strong>
+              {selectedSize && ` (${selectedSize})`} (€
+              {selectedDrinkData ? getFinalPrice(selectedDrinkData).toFixed(2) : "0.00"})
               wilt toevoegen voor <strong>{member?.name}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedDrink(null)}>
+            <AlertDialogCancel onClick={handleCancel}>
               Annuleren
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>
