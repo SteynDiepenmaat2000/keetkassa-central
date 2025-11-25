@@ -20,7 +20,9 @@ const AddDrinkSelectDrink = () => {
   const navigate = useNavigate();
   const { memberId } = useParams();
   const queryClient = useQueryClient();
+  const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
+  const [showSizeDialog, setShowSizeDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Subscribe to realtime changes
@@ -98,8 +100,46 @@ const AddDrinkSelectDrink = () => {
     },
   });
 
-  const handleDrinkSelect = (drinkId: string) => {
+  // Group drinks by base name (removing size indicators)
+  const groupDrinksByName = () => {
+    if (!drinks) return {};
+    
+    const groups: Record<string, any[]> = {};
+    
+    drinks.forEach(drink => {
+      // Extract base name by removing common size indicators
+      let baseName = drink.name
+        .replace(/\s*(klein|small|groot|large)\s*/gi, '')
+        .trim();
+      
+      if (!groups[baseName]) {
+        groups[baseName] = [];
+      }
+      groups[baseName].push(drink);
+    });
+    
+    return groups;
+  };
+
+  const drinkGroups = groupDrinksByName();
+
+  const handleDrinkGroupSelect = (groupName: string) => {
+    const group = drinkGroups[groupName];
+    
+    if (group.length === 1) {
+      // Only one variant, select directly
+      setSelectedDrink(group[0].id);
+      setShowConfirmDialog(true);
+    } else {
+      // Multiple variants, show size selection
+      setSelectedDrinkGroup(groupName);
+      setShowSizeDialog(true);
+    }
+  };
+
+  const handleSizeSelect = (drinkId: string) => {
     setSelectedDrink(drinkId);
+    setShowSizeDialog(false);
     setShowConfirmDialog(true);
   };
 
@@ -109,6 +149,14 @@ const AddDrinkSelectDrink = () => {
     }
     setShowConfirmDialog(false);
     setSelectedDrink(null);
+    setSelectedDrinkGroup(null);
+  };
+
+  const handleCancel = () => {
+    setShowConfirmDialog(false);
+    setShowSizeDialog(false);
+    setSelectedDrink(null);
+    setSelectedDrinkGroup(null);
   };
 
   const selectedDrinkData = drinks?.find((d) => d.id === selectedDrink);
@@ -132,22 +180,62 @@ const AddDrinkSelectDrink = () => {
       </p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {drinks?.map((drink) => (
-          <Button
-            key={drink.id}
-            className="h-24 flex-col gap-1 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-28 sm:text-xl"
-            onClick={() => handleDrinkSelect(drink.id)}
-          >
-            <span className="leading-tight">{drink.name}</span>
-            {drink.volume_ml && (
-              <span className="text-xs opacity-70">{drink.volume_ml}ml</span>
-            )}
-            <span className="text-base opacity-90 sm:text-lg">
-              €{Number(drink.price).toFixed(2)}
-            </span>
-          </Button>
-        ))}
+        {Object.entries(drinkGroups).map(([groupName, groupDrinks]) => {
+          const avgPrice = groupDrinks.reduce((sum, d) => sum + Number(d.price), 0) / groupDrinks.length;
+          
+          return (
+            <Button
+              key={groupName}
+              className="h-24 flex-col gap-1 whitespace-normal break-words px-2 text-lg font-medium active:scale-95 sm:h-28 sm:text-xl"
+              onClick={() => handleDrinkGroupSelect(groupName)}
+            >
+              <span className="leading-tight">{groupName}</span>
+              {groupDrinks.length > 1 && (
+                <span className="text-xs opacity-70">
+                  {groupDrinks.length} opties
+                </span>
+              )}
+              <span className="text-base opacity-90 sm:text-lg">
+                vanaf €{Math.min(...groupDrinks.map(d => Number(d.price))).toFixed(2)}
+              </span>
+            </Button>
+          );
+        })}
       </div>
+
+      <AlertDialog open={showSizeDialog} onOpenChange={setShowSizeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kies formaat voor {selectedDrinkGroup}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selecteer de gewenste grootte voor <strong>{member?.name}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-3 py-4">
+            {selectedDrinkGroup && drinkGroups[selectedDrinkGroup]?.map((drink) => (
+              <Button
+                key={drink.id}
+                variant="outline"
+                className="h-auto flex-col gap-2 p-4"
+                onClick={() => handleSizeSelect(drink.id)}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-semibold">{drink.name}</span>
+                  <span className="text-lg font-bold">€{Number(drink.price).toFixed(2)}</span>
+                </div>
+                {drink.volume_ml && (
+                  <span className="text-sm text-muted-foreground">{drink.volume_ml}ml</span>
+                )}
+              </Button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancel}>
+              Annuleren
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
@@ -160,7 +248,7 @@ const AddDrinkSelectDrink = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedDrink(null)}>
+            <AlertDialogCancel onClick={handleCancel}>
               Annuleren
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>
